@@ -7,8 +7,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
-	"github.com/nixys/nxs-backup/api"
-	"github.com/nixys/nxs-backup/modules/metrics"
+	"github.com/uralm1/nxs-backup/api"
+	"github.com/uralm1/nxs-backup/modules/metrics"
 )
 
 type Opts struct {

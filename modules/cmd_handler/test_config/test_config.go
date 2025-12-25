@@ -2,7 +2,7 @@ package test_config
 
 import (
 	"fmt"
-	"github.com/nixys/nxs-backup/interfaces"
+	"github.com/uralm1/nxs-backup/interfaces"
 )
 
 type Opts struct {

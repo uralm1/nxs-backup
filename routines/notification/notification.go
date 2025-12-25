@@ -1,11 +1,11 @@
 package notification
 
 import (
-	appctx "github.com/nixys/nxs-go-appctx/v3"
+	"github.com/uralm1/nxs-backup/appctx"
 
-	"github.com/nixys/nxs-backup/ctx"
-	"github.com/nixys/nxs-backup/interfaces"
-	"github.com/nixys/nxs-backup/modules/logger"
+	"github.com/uralm1/nxs-backup/ctx"
+	"github.com/uralm1/nxs-backup/interfaces"
+	"github.com/uralm1/nxs-backup/modules/logger"
 )
 
 // Runtime executes the routine

@@ -10,9 +10,10 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	conf "github.com/nixys/nxs-go-conf"
 
-	"github.com/nixys/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/conf"
+
+	"github.com/uralm1/nxs-backup/misc"
 )
 
 type ConfOpts struct {

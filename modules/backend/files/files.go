@@ -8,7 +8,7 @@ import (
 	"github.com/juju/ratelimit"
 	"gopkg.in/ini.v1"
 
-	"github.com/nixys/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/misc"
 )
 
 type limitedWriteCloser struct {

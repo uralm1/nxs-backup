@@ -6,14 +6,14 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/nixys/nxs-backup/interfaces"
-	"github.com/nixys/nxs-backup/modules/storage/ftp"
-	"github.com/nixys/nxs-backup/modules/storage/local"
-	"github.com/nixys/nxs-backup/modules/storage/nfs"
-	"github.com/nixys/nxs-backup/modules/storage/s3"
-	"github.com/nixys/nxs-backup/modules/storage/sftp"
-	"github.com/nixys/nxs-backup/modules/storage/smb"
-	"github.com/nixys/nxs-backup/modules/storage/webdav"
+	"github.com/uralm1/nxs-backup/interfaces"
+	"github.com/uralm1/nxs-backup/modules/storage/ftp"
+	"github.com/uralm1/nxs-backup/modules/storage/local"
+	"github.com/uralm1/nxs-backup/modules/storage/nfs"
+	"github.com/uralm1/nxs-backup/modules/storage/s3"
+	"github.com/uralm1/nxs-backup/modules/storage/sftp"
+	"github.com/uralm1/nxs-backup/modules/storage/smb"
+	"github.com/uralm1/nxs-backup/modules/storage/webdav"
 )
 
 var allowedConnectParams = []string{

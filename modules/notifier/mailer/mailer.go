@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 
-	"github.com/nixys/nxs-backup/modules/logger"
+	"github.com/uralm1/nxs-backup/modules/logger"
 )
 
 type Opts struct {

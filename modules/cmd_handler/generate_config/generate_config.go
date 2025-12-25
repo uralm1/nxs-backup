@@ -10,7 +10,7 @@ import (
 	"github.com/alexflint/go-arg"
 	"gopkg.in/yaml.v3"
 
-	"github.com/nixys/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/misc"
 )
 
 type jobCfgYml struct {

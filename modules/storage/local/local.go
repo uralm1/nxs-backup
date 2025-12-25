@@ -15,11 +15,11 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/nixys/nxs-backup/interfaces"
-	"github.com/nixys/nxs-backup/misc"
-	"github.com/nixys/nxs-backup/modules/backend/files"
-	"github.com/nixys/nxs-backup/modules/logger"
-	. "github.com/nixys/nxs-backup/modules/storage"
+	"github.com/uralm1/nxs-backup/interfaces"
+	"github.com/uralm1/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/modules/backend/files"
+	"github.com/uralm1/nxs-backup/modules/logger"
+	. "github.com/uralm1/nxs-backup/modules/storage"
 )
 
 type Local struct {

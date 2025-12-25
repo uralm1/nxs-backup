@@ -7,7 +7,7 @@ import (
 
 	"github.com/alexflint/go-arg"
 
-	"github.com/nixys/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/misc"
 )
 
 type command string

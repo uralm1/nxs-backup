@@ -1,8 +1,8 @@
 package interfaces
 
 import (
-	"github.com/nixys/nxs-backup/misc"
-	"github.com/nixys/nxs-backup/modules/logger"
+	"github.com/uralm1/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/modules/logger"
 )
 
 type JobTargets map[string]TargetsOnStorages

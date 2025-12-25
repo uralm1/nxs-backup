@@ -5,12 +5,12 @@ import (
 	"os"
 	"syscall"
 
-	appctx "github.com/nixys/nxs-go-appctx/v3"
+	"github.com/uralm1/nxs-backup/appctx"
 
-	"github.com/nixys/nxs-backup/ctx"
-	"github.com/nixys/nxs-backup/misc"
-	"github.com/nixys/nxs-backup/routines/cmd_handler"
-	"github.com/nixys/nxs-backup/routines/notification"
+	"github.com/uralm1/nxs-backup/ctx"
+	"github.com/uralm1/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/routines/cmd_handler"
+	"github.com/uralm1/nxs-backup/routines/notification"
 )
 
 func main() {

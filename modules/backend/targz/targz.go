@@ -11,8 +11,8 @@ import (
 
 	"github.com/klauspost/pgzip"
 
-	"github.com/nixys/nxs-backup/misc"
-	"github.com/nixys/nxs-backup/modules/backend/files"
+	"github.com/uralm1/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/modules/backend/files"
 )
 
 const (

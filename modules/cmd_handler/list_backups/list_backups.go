@@ -5,8 +5,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/nixys/nxs-backup/interfaces"
-	"github.com/nixys/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/interfaces"
+	"github.com/uralm1/nxs-backup/misc"
 )
 
 type Opts struct {

@@ -16,6 +16,5 @@ cmake_install.cmake
 nxs-backup.code-workspace
 /.vscode
 .idea
-version.go
 .docker/Dockerfile-local
 vendor

@@ -2,28 +2,30 @@ package ctx
 
 import (
 	"fmt"
-	"github.com/nixys/nxs-backup/modules/cmd_handler/list_backups"
 	"os"
 	"path"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/uralm1/nxs-backup/modules/cmd_handler/list_backups"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/docker/go-units"
 	"github.com/hashicorp/go-multierror"
-	appctx "github.com/nixys/nxs-go-appctx/v3"
 	"github.com/sirupsen/logrus"
 
-	"github.com/nixys/nxs-backup/interfaces"
-	"github.com/nixys/nxs-backup/misc"
-	"github.com/nixys/nxs-backup/modules/cmd_handler/api_server"
-	"github.com/nixys/nxs-backup/modules/cmd_handler/generate_config"
-	"github.com/nixys/nxs-backup/modules/cmd_handler/self_update"
-	"github.com/nixys/nxs-backup/modules/cmd_handler/start_backup"
-	"github.com/nixys/nxs-backup/modules/cmd_handler/test_config"
-	"github.com/nixys/nxs-backup/modules/logger"
-	"github.com/nixys/nxs-backup/modules/metrics"
+	"github.com/uralm1/nxs-backup/appctx"
+
+	"github.com/uralm1/nxs-backup/interfaces"
+	"github.com/uralm1/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/modules/cmd_handler/api_server"
+	"github.com/uralm1/nxs-backup/modules/cmd_handler/generate_config"
+	"github.com/uralm1/nxs-backup/modules/cmd_handler/self_update"
+	"github.com/uralm1/nxs-backup/modules/cmd_handler/start_backup"
+	"github.com/uralm1/nxs-backup/modules/cmd_handler/test_config"
+	"github.com/uralm1/nxs-backup/modules/logger"
+	"github.com/uralm1/nxs-backup/modules/metrics"
 )
 
 // Ctx defines application custom context

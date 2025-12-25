@@ -3,7 +3,7 @@ package interfaces
 import (
 	"github.com/sirupsen/logrus"
 
-	"github.com/nixys/nxs-backup/modules/logger"
+	"github.com/uralm1/nxs-backup/modules/logger"
 )
 
 type Notifier interface {

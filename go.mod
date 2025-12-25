@@ -1,10 +1,11 @@
-module github.com/nixys/nxs-backup
+module github.com/uralm1/nxs-backup
 
 go 1.22
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/alexflint/go-arg v1.5.1
+	github.com/cskr/pubsub v1.0.2
 	github.com/docker/go-units v0.5.0
 	github.com/fatih/color v1.17.0
 	github.com/gin-gonic/gin v1.10.0
@@ -19,9 +20,8 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mb0/glob v0.0.0-20160210091149-1eb79d2de6c4
 	github.com/minio/minio-go/v7 v7.0.75
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nightlyone/lockfile v1.0.0
-	github.com/nixys/nxs-go-appctx/v3 v3.0.0
-	github.com/nixys/nxs-go-conf v1.1.0
 	github.com/pkg/sftp v1.13.6
 	github.com/prometheus/client_golang v1.20.1
 	github.com/sirupsen/logrus v1.9.3
@@ -31,6 +31,7 @@ require (
 	golang.org/x/crypto v0.26.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/ini.v1 v1.67.0
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -43,7 +44,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
-	github.com/cskr/pubsub v1.0.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.4 // indirect
@@ -67,7 +67,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
@@ -92,5 +91,4 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

@@ -8,7 +8,7 @@ import (
 
 	"github.com/vmihailenco/msgpack"
 
-	"github.com/nixys/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/misc"
 )
 
 const (

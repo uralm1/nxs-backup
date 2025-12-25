@@ -13,14 +13,14 @@ import (
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/ini.v1"
 
-	"github.com/nixys/nxs-backup/ds/mysql_connect"
-	"github.com/nixys/nxs-backup/interfaces"
-	"github.com/nixys/nxs-backup/misc"
-	"github.com/nixys/nxs-backup/modules/backend/exec_cmd"
-	"github.com/nixys/nxs-backup/modules/backend/files"
-	"github.com/nixys/nxs-backup/modules/backend/targz"
-	"github.com/nixys/nxs-backup/modules/logger"
-	"github.com/nixys/nxs-backup/modules/metrics"
+	"github.com/uralm1/nxs-backup/ds/mysql_connect"
+	"github.com/uralm1/nxs-backup/interfaces"
+	"github.com/uralm1/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/modules/backend/exec_cmd"
+	"github.com/uralm1/nxs-backup/modules/backend/files"
+	"github.com/uralm1/nxs-backup/modules/backend/targz"
+	"github.com/uralm1/nxs-backup/modules/logger"
+	"github.com/uralm1/nxs-backup/modules/metrics"
 )
 
 type job struct {

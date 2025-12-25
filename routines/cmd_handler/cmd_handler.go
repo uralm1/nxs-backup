@@ -1,10 +1,11 @@
 package cmd_handler
 
 import (
-	appctx "github.com/nixys/nxs-go-appctx/v3"
 	"github.com/sirupsen/logrus"
 
-	"github.com/nixys/nxs-backup/ctx"
+	"github.com/uralm1/nxs-backup/appctx"
+
+	"github.com/uralm1/nxs-backup/ctx"
 )
 
 func Runtime(app appctx.App) error {

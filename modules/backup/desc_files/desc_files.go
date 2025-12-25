@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/mb0/glob"
 
-	"github.com/nixys/nxs-backup/interfaces"
-	"github.com/nixys/nxs-backup/misc"
-	"github.com/nixys/nxs-backup/modules/backend/exec_cmd"
-	"github.com/nixys/nxs-backup/modules/backend/targz"
-	"github.com/nixys/nxs-backup/modules/logger"
-	"github.com/nixys/nxs-backup/modules/metrics"
+	"github.com/uralm1/nxs-backup/interfaces"
+	"github.com/uralm1/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/modules/backend/exec_cmd"
+	"github.com/uralm1/nxs-backup/modules/backend/targz"
+	"github.com/uralm1/nxs-backup/modules/logger"
+	"github.com/uralm1/nxs-backup/modules/metrics"
 )
 
 type job struct {

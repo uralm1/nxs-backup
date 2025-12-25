@@ -6,7 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
-	"github.com/nixys/nxs-backup/api/endpoints"
+	"github.com/uralm1/nxs-backup/api/endpoints"
 )
 
 func RoutesSet(log *logrus.Logger, reg *prometheus.Registry) *gin.Engine {

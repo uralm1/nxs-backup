@@ -1,4 +1,4 @@
 package misc
 
 // VERSION is a program version generated using nxs-build-tools
-const VERSION = "APP_VERSION"
+const VERSION = "13.12.2"

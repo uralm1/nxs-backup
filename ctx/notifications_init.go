@@ -3,13 +3,13 @@ package ctx
 import (
 	"fmt"
 	"github.com/hashicorp/go-multierror"
-	"github.com/nixys/nxs-backup/modules/notifier/mailer"
-	"github.com/nixys/nxs-backup/modules/notifier/webhooker"
+	"github.com/uralm1/nxs-backup/modules/notifier/mailer"
+	"github.com/uralm1/nxs-backup/modules/notifier/webhooker"
 	"github.com/sirupsen/logrus"
 	"net/mail"
 	"strings"
 
-	"github.com/nixys/nxs-backup/interfaces"
+	"github.com/uralm1/nxs-backup/interfaces"
 )
 
 var messageLevels = map[string]logrus.Level{

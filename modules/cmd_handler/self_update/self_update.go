@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/nixys/nxs-backup/misc"
+	"github.com/uralm1/nxs-backup/misc"
 )
 
 type Opts struct {
