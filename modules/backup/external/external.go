@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/uralm1/nxs-backup/modules/backend/targz"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/uralm1/nxs-backup/modules/backend/targz"
 
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
@@ -213,20 +214,27 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, _ string) (err error) {
 		return err
 	}
 	tmpBackupPath := out.FullPath
+
 	if j.gzip {
 		newTmpBackup := tmpBackupPath + ".gz"
 		if err = targz.GZip(tmpBackupPath, newTmpBackup, j.diskRateLimit); err != nil {
-			logCh <- logger.Log(j.name, "").Errorf("Unable to gzip tmp backup: %s", err)
+			logCh <- logger.Log(j.name, "").Errorf("Unable to gzip temp backup: %s", err)
 			return err
 		}
 		_ = os.RemoveAll(tmpBackupPath)
 		tmpBackupPath = newTmpBackup
 	}
 
-	logCh <- logger.Log(j.name, "").Debugf("Created temp backup %s.", tmpBackupPath)
-
 	j.dumpedObjects[j.name] = interfaces.DumpObject{TmpFile: tmpBackupPath}
-	fileInfo, _ := os.Stat(tmpBackupPath)
+
+	fileInfo, err := os.Stat(tmpBackupPath)
+	if err != nil {
+		logCh <- logger.Log(j.name, "").Errorf("Error accessing temporary backup file: %s", err)
+		return err
+	} else {
+		logCh <- logger.Log(j.name, "").Debugf("Created temp backup %s.", tmpBackupPath)
+	}
+
 	j.SetOfsMetrics("", map[string]float64{
 		metrics.BackupSize: float64(fileInfo.Size()),
 	})
