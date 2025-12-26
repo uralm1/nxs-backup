@@ -127,18 +127,6 @@ Following features are already in backlog for our development team and will be r
 - New backup types (Clickhouse, Elastic, lvm, etc.)
 - Programmatic implementation of backup creation instead of calling external utilities
 
-## Feedback
-
-For support and feedback please contact me:
-
-- Telegram: [@r_andreev](https://t.me/r_andreev)
-- Email: r.andreev@nixys.io
-
-For news and discussions subscribe the channels:
-
-- Telegram community (news): [@nxs_backup](https://t.me/nxs_backup)
-- Telegram community (chat): [@nxs_backup_chat](https://t.me/nxs_backup_chat)
-
 ## License
 
 nxs-backup is released under the [Apache-2.0 license](LICENSE).
