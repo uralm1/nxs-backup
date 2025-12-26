@@ -26,7 +26,7 @@ const (
 	LatestVersionURL = "https://github.com/nixys/nxs-backup/releases/latest/download/nxs-backup"
 	VersionURL       = "https://github.com/nixys/nxs-backup/releases/download/v"
 
-	DescFiles            BackupType = "desc_files"
+	DescFiles            BackupType = "files"
 	IncFiles             BackupType = "inc_files"
 	Mysql                BackupType = "mysql"
 	MysqlXtrabackup      BackupType = "mysql_xtrabackup"
