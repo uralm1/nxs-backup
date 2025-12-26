@@ -1,7 +1,7 @@
 package notification
 
 import (
-	"github.com/uralm1/nxs-backup/appctx"
+	"context"
 
 	"github.com/uralm1/nxs-backup/ctx"
 	"github.com/uralm1/nxs-backup/interfaces"
@@ -9,8 +9,7 @@ import (
 )
 
 // Runtime executes the routine
-func Runtime(app appctx.App) error {
-	cc := app.ValueGet().(*ctx.Ctx)
+func Runtime(cc *ctx.Ctx, rctx context.Context) error {
 	cc.Log.Trace("notification routine: start")
 
 	for {
@@ -24,7 +23,7 @@ func Runtime(app appctx.App) error {
 					cc.EventsWG.Done()
 				}(n)
 			}
-		case <-app.SelfCtxDone():
+		case <-rctx.Done():
 			cc.EventsWG.Wait()
 			cc.Log.Trace("notification routine: done")
 			return nil

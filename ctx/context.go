@@ -15,8 +15,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 
-	"github.com/uralm1/nxs-backup/appctx"
-
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/cmd_handler/api_server"
@@ -49,7 +47,7 @@ type app struct {
 	serverBind  string
 }
 
-func AppCtxInit() (any, error) {
+func AppCtxInit() (*Ctx, error) {
 	c := &Ctx{
 		EventsWG: &sync.WaitGroup{},
 		EventCh:  make(chan logger.LogRecord),
@@ -61,7 +59,13 @@ func AppCtxInit() (any, error) {
 		return nil, err
 	}
 
-	l, _ := appctx.DefaultLogInit(os.Stderr, logrus.InfoLevel, &logrus.TextFormatter{})
+	//l, _ := appctx.DefaultLogInit(os.Stderr, logrus.InfoLevel, &logrus.TextFormatter{})
+	l := &logrus.Logger{
+		Out:       os.Stderr,
+		Level:     logrus.InfoLevel,
+		Formatter: &logrus.TextFormatter{},
+	}
+
 	c.Log = l
 
 	switch ra.Cmd {
@@ -292,7 +296,13 @@ func logInit(c *Ctx, file, level string) error {
 		return fmt.Errorf("log init: %w", err)
 	}
 
-	c.Log, err = appctx.DefaultLogInit(f, l, &logger.LogFormatter{})
+	//c.Log, err = appctx.DefaultLogInit(f, l, &logger.LogFormatter{})
+	c.Log = &logrus.Logger{
+		Out:       f,
+		Level:     l,
+		Formatter: &logger.LogFormatter{},
+	}
+	err = nil
 	return err
 }
 
