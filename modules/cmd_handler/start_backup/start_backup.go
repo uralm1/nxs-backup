@@ -77,9 +77,13 @@ func (sb *startBackup) Run() {
 		sb.evCh <- logger.Log("", "").Errorf("Backup plan initialised with errors: %v", sb.initErr)
 	}
 
-	sb.evCh <- logger.Log("", "").Info("Backup starting.")
+	var pn string
+	if sb.metricsData.Project != "" {
+		pn = fmt.Sprintf(" (%s)", sb.metricsData.Project)
+	}
+	sb.evCh <- logger.Log("", "").Info(fmt.Sprintf("Backup starting%s.", pn))
 
-	// Crate lockfile
+	// Create lockfile
 	lock, err := lockfile.New(path.Join(os.TempDir(), "nxs-backup.lck"))
 	if sb.waitPrev != 0 {
 		now := time.Now()
