@@ -1,11 +1,10 @@
 package conf
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -151,7 +150,7 @@ func testPrepareYAMLConfig(t *testing.T) {
 		t.Fatal("Yaml encode error:", err)
 	}
 
-	if err := ioutil.WriteFile(testYAMLTmpConfPath, s, 0644); err != nil {
+	if err := os.WriteFile(testYAMLTmpConfPath, s, 0644); err != nil {
 		t.Fatal("Config file prepare error:", err)
 	}
 

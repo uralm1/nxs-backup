@@ -19,3 +19,5 @@ nxs-backup.code-workspace
 .docker/Dockerfile-local
 vendor
 /nxs-backup
+/*.conf
+/*.log
