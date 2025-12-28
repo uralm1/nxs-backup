@@ -167,7 +167,7 @@ func (gc *generateConfig) Run() {
 	cfgName := gc.jobType + ".conf"
 
 	switch gc.jobType {
-	case misc.DescFiles:
+	case misc.DiscFiles:
 		job.StoragesOptions = genStorageOpts(gc.storages, false)
 		job.Sources = []sourceYaml{
 			{

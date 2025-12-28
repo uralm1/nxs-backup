@@ -28,7 +28,7 @@ const (
 	LatestVersionURL = "https://github.com/nixys/nxs-backup/releases/latest/download/nxs-backup"
 	VersionURL       = "https://github.com/nixys/nxs-backup/releases/download/v"
 
-	DescFiles            BackupType = "files"
+	DiscFiles            BackupType = "files"
 	IncFiles             BackupType = "inc_files"
 	Mysql                BackupType = "mysql"
 	MysqlXtrabackup      BackupType = "mysql_xtrabackup"
@@ -45,7 +45,7 @@ var CPULimit = 0
 
 func AllowedBackupTypesList() []string {
 	return []string{
-		string(DescFiles),
+		string(DiscFiles),
 		string(IncFiles),
 		string(Mysql),
 		string(MysqlXtrabackup),

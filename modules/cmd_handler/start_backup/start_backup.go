@@ -81,7 +81,7 @@ func (sb *startBackup) Run() {
 	if sb.metricsData.Project != "" {
 		pn = fmt.Sprintf(" (%s)", sb.metricsData.Project)
 	}
-	sb.evCh <- logger.Log("", "").Info(fmt.Sprintf("Backup%s starting job: %s.", pn, sb.jobName))
+	sb.evCh <- logger.Log("", "").Info(fmt.Sprintf("Backup%s starting: %s.", pn, sb.jobName))
 
 	// Create lockfile
 	lock, err := lockfile.New(path.Join(os.TempDir(), "nxs-backup.lck"))

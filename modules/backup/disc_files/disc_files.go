@@ -1,4 +1,4 @@
-package desc_files
+package disc_files
 
 import (
 	"errors"
@@ -80,7 +80,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 		appMetrics: jp.Metrics.RegisterJob(
 			metrics.JobData{
 				JobName:       jp.Name,
-				JobType:       misc.DescFiles,
+				JobType:       misc.DiscFiles,
 				TargetMetrics: make(map[string]metrics.TargetData),
 			},
 		),
@@ -153,7 +153,7 @@ func (j *job) GetTempDir() string {
 }
 
 func (j *job) GetType() misc.BackupType {
-	return misc.DescFiles
+	return misc.DiscFiles
 }
 
 func (j *job) GetTargetOfsList() (ofsList []string) {

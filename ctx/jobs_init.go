@@ -13,7 +13,7 @@ import (
 	"github.com/uralm1/nxs-backup/ds/redis_connect"
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
-	"github.com/uralm1/nxs-backup/modules/backup/desc_files"
+	"github.com/uralm1/nxs-backup/modules/backup/disc_files"
 	"github.com/uralm1/nxs-backup/modules/backup/external"
 	"github.com/uralm1/nxs-backup/modules/backup/inc_files"
 	"github.com/uralm1/nxs-backup/modules/backup/mongodump"
@@ -125,11 +125,11 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 		}
 
 		switch j.Type {
-		case misc.DescFiles:
-			var sources []desc_files.SourceParams
+		case misc.DiscFiles:
+			var sources []disc_files.SourceParams
 
 			for _, src := range j.Sources {
-				sources = append(sources, desc_files.SourceParams{
+				sources = append(sources, disc_files.SourceParams{
 					Name:        src.Name,
 					Targets:     src.Targets,
 					Excludes:    src.Excludes,
@@ -138,7 +138,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 				})
 			}
 
-			job, err = desc_files.Init(desc_files.JobParams{
+			job, err = disc_files.Init(disc_files.JobParams{
 				Name:             j.Name,
 				TmpDir:           j.TmpDir,
 				NeedToMakeBackup: needToMakeBackup,
