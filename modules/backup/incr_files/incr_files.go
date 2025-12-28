@@ -1,4 +1,4 @@
-package inc_files
+package incr_files
 
 import (
 	"errors"
@@ -78,7 +78,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 		appMetrics: jp.Metrics.RegisterJob(
 			metrics.JobData{
 				JobName:       jp.Name,
-				JobType:       misc.IncFiles,
+				JobType:       misc.IncrFiles,
 				TargetMetrics: make(map[string]metrics.TargetData),
 			},
 		),
@@ -151,7 +151,7 @@ func (j *job) GetTempDir() string {
 }
 
 func (j *job) GetType() misc.BackupType {
-	return misc.IncFiles
+	return misc.IncrFiles
 }
 
 func (j *job) GetTargetOfsList() (ofsList []string) {

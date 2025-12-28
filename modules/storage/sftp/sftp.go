@@ -79,7 +79,7 @@ func Init(name string, opts Opts, rl int64) (*SFTP, error) {
 	sftpClient, err := sftp.NewClient(sshConn)
 	if err != nil {
 		_ = sshConn.Close()
-		return nil, fmt.Errorf("Failed to init '%s' SFTP storage. Error: %v ", name, fmt.Errorf("couldn't initialise SFTP: %w", err))
+		return nil, fmt.Errorf("Failed to init '%s' SFTP storage. Error: %v ", name, fmt.Errorf("couldn't initialize SFTP: %w", err))
 	}
 
 	return &SFTP{
@@ -105,10 +105,10 @@ func (s *SFTP) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 		links                  map[string]string
 	)
 
-	if bakType == string(misc.IncFiles) {
-		bakDstPath, mtdDstPath, links, err = GetIncBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath)
+	if bakType == string(misc.IncrFiles) {
+		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath)
 	} else {
-		bakDstPath, links, err = GetDescBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention)
+		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention)
 	}
 	if err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to get destination path and links: '%s'", err)
@@ -205,14 +205,14 @@ func (s *SFTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job
 		return nil
 	}
 
-	if job.GetType() == misc.IncFiles {
-		return s.deleteIncBackup(logCh, job.GetName(), ofsPart, full)
+	if job.GetType() == misc.IncrFiles {
+		return s.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
 	} else {
-		return s.deleteDescBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
+		return s.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
 	}
 }
 
-func (s *SFTP) deleteDescBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
+func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
 	type fileLinks struct {
 		wLink string
 		dLink string
@@ -354,7 +354,7 @@ func (s *SFTP) deleteDescBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 	return errs.ErrorOrNil()
 }
 
-func (s *SFTP) deleteIncBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
+func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
 	var errs *multierror.Error
 
 	if full {

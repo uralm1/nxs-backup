@@ -99,10 +99,10 @@ func (f *FTP) IsLocal() int { return 0 }
 func (f *FTP) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, bakType string) error {
 	var bakRemPaths, mtdRemPaths []string
 
-	if bakType == string(misc.IncFiles) {
-		bakRemPaths, mtdRemPaths = GetIncBackupDstList(tmpBackupFile, ofs, f.backupPath)
+	if bakType == string(misc.IncrFiles) {
+		bakRemPaths, mtdRemPaths = GetIncrBackupDstList(tmpBackupFile, ofs, f.backupPath)
 	} else {
-		bakRemPaths = GetDescBackupDstList(tmpBackupFile, ofs, f.backupPath, f.Retention)
+		bakRemPaths = GetDiscBackupDstList(tmpBackupFile, ofs, f.backupPath, f.Retention)
 	}
 
 	if len(mtdRemPaths) > 0 {
@@ -161,14 +161,14 @@ func (f *FTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 		return err
 	}
 
-	if job.GetType() == misc.IncFiles {
-		return f.deleteIncBackup(logCh, job.GetName(), ofsPart, full)
+	if job.GetType() == misc.IncrFiles {
+		return f.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
 	} else {
-		return f.deleteDescBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
+		return f.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
 	}
 }
 
-func (f *FTP) deleteDescBackup(logCh chan logger.LogRecord, job, ofsPart string, safety bool) error {
+func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string, safety bool) error {
 	var errs *multierror.Error
 
 	for _, p := range RetentionPeriodsList {
@@ -241,7 +241,7 @@ func (f *FTP) deleteDescBackup(logCh chan logger.LogRecord, job, ofsPart string,
 	return errs.ErrorOrNil()
 }
 
-func (f *FTP) deleteIncBackup(logCh chan logger.LogRecord, job, ofsPart string, full bool) error {
+func (f *FTP) deleteIncrBackup(logCh chan logger.LogRecord, job, ofsPart string, full bool) error {
 	var errs *multierror.Error
 
 	if err := f.updateConn(); err != nil {

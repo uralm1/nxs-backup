@@ -1,4 +1,4 @@
-// this file is modified as of a derivative work of nxs-backup
+// this file was modified as of a derivative work of nxs-backup
 
 package notification
 

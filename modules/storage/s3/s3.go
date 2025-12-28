@@ -93,10 +93,10 @@ func (s *S3) IsLocal() int { return 0 }
 func (s *S3) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, bakType string) error {
 	var bakRemPaths, mtdRemPaths []string
 
-	if bakType == string(misc.IncFiles) {
-		bakRemPaths, mtdRemPaths = GetIncBackupDstList(tmpBackupFile, ofs, s.backupPath)
+	if bakType == string(misc.IncrFiles) {
+		bakRemPaths, mtdRemPaths = GetIncrBackupDstList(tmpBackupFile, ofs, s.backupPath)
 	} else {
-		bakRemPaths = GetDescBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention)
+		bakRemPaths = GetDiscBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention)
 	}
 
 	if len(mtdRemPaths) > 0 {
@@ -169,7 +169,7 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 			return object.Err
 		}
 
-		if job.GetType() == misc.IncFiles {
+		if job.GetType() == misc.IncrFiles {
 			if full {
 				filesList["inc"] = append(filesList["inc"], object)
 			} else {

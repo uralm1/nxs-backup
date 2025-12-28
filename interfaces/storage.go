@@ -110,7 +110,7 @@ func (s Storages) CleanupTmpData(job Job) error {
 	for _, dumpObj := range job.GetDumpObjects() {
 
 		tmpBakFile := dumpObj.TmpFile
-		if job.GetType() == misc.IncFiles {
+		if job.GetType() == misc.IncrFiles {
 			// cleanup tmp metadata files
 			_ = os.Remove(path.Join(tmpBakFile + ".inc"))
 			initFile := path.Join(tmpBakFile + ".init")

@@ -185,7 +185,7 @@ func (gc *generateConfig) Run() {
 				SaveAbsPath: true,
 			},
 		}
-	case misc.IncFiles:
+	case misc.IncrFiles:
 		job.StoragesOptions = genStorageOpts(gc.storages, true)
 		job.Sources = []sourceYaml{
 			{

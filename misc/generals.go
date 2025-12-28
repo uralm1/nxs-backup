@@ -1,4 +1,4 @@
-// this file is modified as of a derivative work of nxs-backup
+// this file was modified as of a derivative work of nxs-backup
 
 package misc
 
@@ -25,11 +25,11 @@ const (
 	YearlyBackupDay  = "1"
 	MonthlyBackupDay = "1"
 	WeeklyBackupDay  = "0"
-	LatestVersionURL = "https://github.com/nixys/nxs-backup/releases/latest/download/nxs-backup"
-	VersionURL       = "https://github.com/nixys/nxs-backup/releases/download/v"
+	LatestVersionURL = "https://github.com/uralm1/nxs-backup/releases/latest/download/nxs-backup"
+	VersionURL       = "https://github.com/uralm1/nxs-backup/releases/download/v"
 
 	DiscFiles            BackupType = "files"
-	IncFiles             BackupType = "inc_files"
+	IncrFiles            BackupType = "incr_files"
 	Mysql                BackupType = "mysql"
 	MysqlXtrabackup      BackupType = "mysql_xtrabackup"
 	MariadbBackup        BackupType = "mariadb_backup"
@@ -46,7 +46,7 @@ var CPULimit = 0
 func AllowedBackupTypesList() []string {
 	return []string{
 		string(DiscFiles),
-		string(IncFiles),
+		string(IncrFiles),
 		string(Mysql),
 		string(MysqlXtrabackup),
 		string(MariadbBackup),

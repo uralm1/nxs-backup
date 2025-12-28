@@ -86,10 +86,10 @@ func (n *NFS) IsLocal() int { return 0 }
 func (n *NFS) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, bakType string) error {
 	var bakRemPaths, mtdRemPaths []string
 
-	if bakType == string(misc.IncFiles) {
-		bakRemPaths, mtdRemPaths = GetIncBackupDstList(tmpBackupFile, ofs, n.backupPath)
+	if bakType == string(misc.IncrFiles) {
+		bakRemPaths, mtdRemPaths = GetIncrBackupDstList(tmpBackupFile, ofs, n.backupPath)
 	} else {
-		bakRemPaths = GetDescBackupDstList(tmpBackupFile, ofs, n.backupPath, n.Retention)
+		bakRemPaths = GetDiscBackupDstList(tmpBackupFile, ofs, n.backupPath, n.Retention)
 	}
 
 	if len(mtdRemPaths) > 0 {
@@ -158,14 +158,14 @@ func (n *NFS) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 		return nil
 	}
 
-	if job.GetType() == misc.IncFiles {
-		return n.deleteIncBackup(logCh, job.GetName(), ofsPart, full)
+	if job.GetType() == misc.IncrFiles {
+		return n.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
 	} else {
-		return n.deleteDescBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
+		return n.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
 	}
 }
 
-func (n *NFS) deleteDescBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
+func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
 	var errs *multierror.Error
 
 	for _, p := range RetentionPeriodsList {
@@ -241,7 +241,7 @@ func (n *NFS) deleteDescBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 	return errs
 }
 
-func (n *NFS) deleteIncBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
+func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
 	var errs *multierror.Error
 
 	if full {

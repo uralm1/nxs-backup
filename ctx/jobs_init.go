@@ -1,3 +1,5 @@
+// this file was modified as of a derivative work of nxs-backup
+
 package ctx
 
 import (
@@ -15,7 +17,7 @@ import (
 	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/backup/disc_files"
 	"github.com/uralm1/nxs-backup/modules/backup/external"
-	"github.com/uralm1/nxs-backup/modules/backup/inc_files"
+	"github.com/uralm1/nxs-backup/modules/backup/incr_files"
 	"github.com/uralm1/nxs-backup/modules/backup/mongodump"
 	"github.com/uralm1/nxs-backup/modules/backup/mysql_logical"
 	"github.com/uralm1/nxs-backup/modules/backup/mysql_physical"
@@ -150,11 +152,11 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 				Metrics:          o.metricsData,
 			})
 
-		case misc.IncFiles:
-			var sources []inc_files.SourceParams
+		case misc.IncrFiles:
+			var sources []incr_files.SourceParams
 
 			for _, src := range j.Sources {
-				sources = append(sources, inc_files.SourceParams{
+				sources = append(sources, incr_files.SourceParams{
 					Name:        src.Name,
 					Targets:     src.Targets,
 					Excludes:    src.Excludes,
@@ -163,7 +165,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 				})
 			}
 
-			job, err = inc_files.Init(inc_files.JobParams{
+			job, err = incr_files.Init(incr_files.JobParams{
 				Name:            j.Name,
 				TmpDir:          j.TmpDir,
 				SafetyBackup:    j.SafetyBackup,

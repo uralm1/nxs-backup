@@ -99,10 +99,10 @@ func (s *SMB) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile
 		links                  map[string]string
 	)
 
-	if bakType == string(misc.IncFiles) {
-		bakDstPath, mtdDstPath, links, err = GetIncBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath)
+	if bakType == string(misc.IncrFiles) {
+		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath)
 	} else {
-		bakDstPath, links, err = GetDescBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention)
+		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention)
 	}
 	if err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to get destination path and links: '%s'", err)
@@ -175,14 +175,14 @@ func (s *SMB) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 		return nil
 	}
 
-	if job.GetType() == misc.IncFiles {
-		return s.deleteIncBackup(logCh, job.GetName(), ofsPart, full)
+	if job.GetType() == misc.IncrFiles {
+		return s.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
 	} else {
-		return s.deleteDescBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
+		return s.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
 	}
 }
 
-func (s *SMB) deleteDescBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
+func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
 	type fileLinks struct {
 		wLink string
 		dLink string
@@ -325,7 +325,7 @@ func (s *SMB) deleteDescBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 	return errs.ErrorOrNil()
 }
 
-func (s *SMB) deleteIncBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
+func (s *SMB) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
 	var errs *multierror.Error
 
 	if full {

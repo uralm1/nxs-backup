@@ -77,10 +77,10 @@ func (wd *WebDav) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackup
 		links                  map[string]string
 	)
 
-	if bakType == string(misc.IncFiles) {
-		bakDstPath, mtdDstPath, links, err = GetIncBackupDstAndLinks(tmpBackupFile, ofs, wd.backupPath)
+	if bakType == string(misc.IncrFiles) {
+		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, wd.backupPath)
 	} else {
-		bakDstPath, links, err = GetDescBackupDstAndLinks(tmpBackupFile, ofs, wd.backupPath, wd.Retention)
+		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, wd.backupPath, wd.Retention)
 	}
 	if err != nil {
 		logCh <- logger.Log(jobName, wd.name).Errorf("Unable to get destination path and links: '%s'", err)
@@ -148,14 +148,14 @@ func (wd *WebDav) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, 
 		return nil
 	}
 
-	if job.GetType() == misc.IncFiles {
-		return wd.deleteIncBackup(logCh, job.GetName(), ofsPart, full)
+	if job.GetType() == misc.IncrFiles {
+		return wd.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
 	} else {
-		return wd.deleteDescBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
+		return wd.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
 	}
 }
 
-func (wd *WebDav) deleteDescBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
+func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
 	var errs *multierror.Error
 
 	for _, p := range RetentionPeriodsList {
@@ -217,7 +217,7 @@ func (wd *WebDav) deleteDescBackup(logCh chan logger.LogRecord, jobName, ofsPart
 	return errs.ErrorOrNil()
 }
 
-func (wd *WebDav) deleteIncBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
+func (wd *WebDav) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
 	var errs *multierror.Error
 
 	if full {

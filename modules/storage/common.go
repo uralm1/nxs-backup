@@ -76,7 +76,7 @@ func IsNeedToBackup(day, week, month int) bool {
 	return false
 }
 
-func GetDescBackupDstAndLinks(tmpBackupFile, ofs, bakPath string, retention Retention) (dst string, links map[string]string, err error) {
+func GetDiscBackupDstAndLinks(tmpBackupFile, ofs, bakPath string, retention Retention) (dst string, links map[string]string, err error) {
 
 	var relative string
 	links = make(map[string]string)
@@ -114,7 +114,7 @@ func GetDescBackupDstAndLinks(tmpBackupFile, ofs, bakPath string, retention Rete
 	return
 }
 
-func GetIncBackupDstAndLinks(tmpBackupFile, ofs, bakPath string) (bakDst, mtdDst string, links map[string]string, err error) {
+func GetIncrBackupDstAndLinks(tmpBackupFile, ofs, bakPath string) (bakDst, mtdDst string, links map[string]string, err error) {
 
 	var relative string
 	links = make(map[string]string)
@@ -188,7 +188,7 @@ func GetIncBackupDstAndLinks(tmpBackupFile, ofs, bakPath string) (bakDst, mtdDst
 	return
 }
 
-func GetDescBackupDstList(tmpBackupFile, ofs, bakPath string, retention Retention) (dst []string) {
+func GetDiscBackupDstList(tmpBackupFile, ofs, bakPath string, retention Retention) (dst []string) {
 
 	bakFile := path.Base(tmpBackupFile)
 	basePath := path.Join(bakPath, ofs)
@@ -206,7 +206,7 @@ func GetDescBackupDstList(tmpBackupFile, ofs, bakPath string, retention Retentio
 	return
 }
 
-func GetIncBackupDstList(tmpBackupFile, ofs, bakPath string) (bakDst, mtdDst []string) {
+func GetIncrBackupDstList(tmpBackupFile, ofs, bakPath string) (bakDst, mtdDst []string) {
 
 	year := misc.GetDateTimeNow("year")
 	dom := misc.GetDateTimeNow("dom")

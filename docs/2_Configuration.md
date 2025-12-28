@@ -33,8 +33,8 @@ You can generate a configuration file by running nxs-backup with the generate co
 -T [--backup-type] (required, backup type)
 ```
 Available backup types:
-- desc_files; 
-- inc_files;
+- files; 
+- incr_files;
 - mysql;
 - mysql_xtrabackup;
 - mariadb_backup;

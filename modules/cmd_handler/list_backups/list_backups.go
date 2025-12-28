@@ -2,6 +2,7 @@ package list_backups
 
 import (
 	"fmt"
+
 	"github.com/fatih/color"
 	"github.com/hashicorp/go-multierror"
 
@@ -61,7 +62,7 @@ func (lb *listBackups) Run() {
 	}()
 
 	if lb.initErr != nil {
-		color.HiRed("[WARNING!] Backup plan initialised with errors:")
+		color.HiRed("[WARNING!] Backup plan initialized with errors:")
 		fmt.Println(lb.initErr)
 	}
 
