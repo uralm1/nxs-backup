@@ -1,3 +1,5 @@
+// this file is modified as of a derivative work of nxs-backup
+
 package main
 
 import (

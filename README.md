@@ -1,8 +1,4 @@
-# nxs-backup
-
-[![Telegram News][tg-news-badge]][tg-news-url] [![Telegram Chat][tg-chat-badge]][tg-chat-url]
-
-![nxs-backup](https://github.com/nixys/nxs-backup/assets/28505813/20d0da34-eb6e-4ae4-a5c9-24845407400f)
+# nxs-backup (fork)
 
 nxs-backup is a tool for creating and delivery backups, rotating it locally and on remote storages, compatible with
 GNU/Linux distributions.
@@ -40,26 +36,15 @@ GNU/Linux distributions.
   - local disk rate
   - remote storage rate
 
-### Who can use the tool?
-
-- System Administrators
-- DevOps Engineers
-- Developers
-- Anybody who need to do regular backups
-
 ## Quickstart
 
 - Clone the repo
   ```sh
-  git clone https://github.com/nixys/nxs-backup.git
+  git clone https://github.com/uralm1/nxs-backup.git
   ```
   
 ### On-premise (bare-metal or virtual machine)
 
-- Go to on-premise directory
-  ```sh
-  cd nxs-backup/.deploy/on-premise/
-  ```
 - Install nxs-backup, just download and unpack archive for your CPU architecture.
   ```sh
   curl -L https://github.com/nixys/nxs-backup/releases/latest/download/nxs-backup-amd64.tar.gz -o /tmp/nxs-backup.tar.gz
@@ -110,22 +95,6 @@ GNU/Linux distributions.
   helm -n $NAMESPACE_SERVICE_NAME install nxs-backup nixys/nxs-universal-chart -f values.yaml
   ```
   where $NAMESPACE_SERVICE_NAME is the namespace in which to back up your data
-
-## Documentation
-
-For detailed information on using the tool please visit [nxs-backup.io](https://nxs-backup.io).
-
-## Roadmap
-
-Following features are already in backlog for our development team and will be released soon:
-
-- Encrypting of backups
-- Restore backups by nxs-backup
-- API for remote management and metrics monitoring
-- Web interface for management
-- Proprietary startup scheduler
-- New backup types (Clickhouse, Elastic, lvm, etc.)
-- Programmatic implementation of backup creation instead of calling external utilities
 
 ## License
 

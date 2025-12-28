@@ -1,16 +1,17 @@
+// this file is modified as of a derivative work of nxs-backup
+
 package ctx
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/uralm1/nxs-backup/modules/cmd_handler/list_backups"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/docker/go-units"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
@@ -19,7 +20,6 @@ import (
 	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/cmd_handler/api_server"
 	"github.com/uralm1/nxs-backup/modules/cmd_handler/generate_config"
-	"github.com/uralm1/nxs-backup/modules/cmd_handler/self_update"
 	"github.com/uralm1/nxs-backup/modules/cmd_handler/start_backup"
 	"github.com/uralm1/nxs-backup/modules/cmd_handler/test_config"
 	"github.com/uralm1/nxs-backup/modules/logger"
@@ -59,23 +59,23 @@ func AppCtxInit() (*Ctx, error) {
 		return nil, err
 	}
 
-	//l, _ := appctx.DefaultLogInit(os.Stderr, logrus.InfoLevel, &logrus.TextFormatter{})
-	l := &logrus.Logger{
+	c.Log = &logrus.Logger{
 		Out:       os.Stderr,
 		Level:     logrus.InfoLevel,
 		Formatter: &logrus.TextFormatter{},
 	}
 
-	c.Log = l
-
 	switch ra.Cmd {
 	case update:
-		c.Cmd = self_update.Init(
-			self_update.Opts{
-				Version: ra.CmdParams.(*UpdateCmd).Version,
-				Done:    c.Done,
-			},
-		)
+		fmt.Fprintln(os.Stderr, "Self update is not supported in this fork of nxs-backup.")
+		return nil, errors.New("unsupported")
+
+		//c.Cmd = self_update.Init(
+		//	self_update.Opts{
+		//		Version: ra.CmdParams.(*UpdateCmd).Version,
+		//		Done:    c.Done,
+		//	},
+		//)
 	case generate:
 		if _, err = readConfig(ra.ConfigPath); err != nil {
 			printInitError("Failed to read configuration file: %v\n", err)
@@ -201,11 +201,12 @@ func appInit(c *Ctx, cfgPath string) (app, error) {
 
 	if conf.Server.Metrics.Enabled {
 		nva := 0.0
-		ver, _ := semver.NewVersion(misc.VERSION)
-		newVer, _, _ := misc.CheckNewVersionAvailable(strconv.FormatUint(ver.Major(), 10))
-		if newVer != "" {
-			nva = 1
-		}
+		// disabled in fork
+		//ver, _ := semver.NewVersion(misc.VERSION)
+		//newVer, _, _ := misc.CheckNewVersionAvailable(strconv.FormatUint(ver.Major(), 10))
+		//if newVer != "" {
+		//	nva = 1
+		//}
 		a.metricsData.NewVersionAvailable = nva
 		a.metricsData.Enabled = true
 	}

@@ -1,3 +1,5 @@
+// this file is modified as of a derivative work of nxs-backup
+
 package ctx
 
 import (
@@ -96,7 +98,7 @@ func ReadArgs() (p ArgsParams, err error) {
 }
 
 func (args) Version() string {
-	return "nxs-backup " + misc.VERSION
+	return "nxs-backup (fork) " + misc.VERSION
 }
 
 func getCmd(argCmd string) command {
