@@ -69,13 +69,13 @@ func AppCtxInit() (*Ctx, error) {
 	case update:
 		fmt.Fprintln(os.Stderr, "Self update is not supported in this fork of nxs-backup.")
 		return nil, errors.New("unsupported")
-
 		//c.Cmd = self_update.Init(
 		//	self_update.Opts{
 		//		Version: ra.CmdParams.(*UpdateCmd).Version,
 		//		Done:    c.Done,
 		//	},
 		//)
+
 	case generate:
 		if _, err = readConfig(ra.ConfigPath); err != nil {
 			printInitError("Failed to read configuration file: %v\n", err)
