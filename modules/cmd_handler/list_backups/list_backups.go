@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/fatih/color"
-	"github.com/hashicorp/go-multierror"
 
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
@@ -55,7 +54,7 @@ func Init(o Opts) *listBackups {
 
 func (lb *listBackups) Run() {
 	var err error
-	errs := new(multierror.Error)
+	var errs []error
 
 	defer func() {
 		lb.done <- err
@@ -67,22 +66,22 @@ func (lb *listBackups) Run() {
 	}
 
 	if lb.jobName == "external" || lb.jobName == "all" {
-		err := printBackups("External", lb.extJobs)
-		errs = multierror.Append(err, errs)
+		err = printBackups("External", lb.extJobs)
+		errs = append(errs, err)
 	}
 	if lb.jobName == "databases" || lb.jobName == "all" {
-		err := printBackups("Database", lb.dbJobs)
-		errs = multierror.Append(err, errs)
+		err = printBackups("Database", lb.dbJobs)
+		errs = append(errs, err)
 	}
 	if lb.jobName == "files" || lb.jobName == "all" {
-		err := printBackups("File", lb.fileJobs)
-		errs = multierror.Append(err, errs)
+		err = printBackups("File", lb.fileJobs)
+		errs = append(errs, err)
 	}
 	if job, ok := lb.jobs[lb.jobName]; ok {
-		err := printBackups("", interfaces.Jobs{job})
-		errs = multierror.Append(err, errs)
+		err = printBackups("", interfaces.Jobs{job})
+		errs = append(errs, err)
 	}
-	if errs.Len() > 0 {
+	if len(errs) > 0 {
 		color.HiRed("[WARNING!] Execution finished with errors.")
 		err = misc.ErrExecution
 	}

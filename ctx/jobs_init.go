@@ -3,11 +3,10 @@
 package ctx
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/hashicorp/go-multierror"
 
 	"github.com/uralm1/nxs-backup/ds/mongo_connect"
 	"github.com/uralm1/nxs-backup/ds/mysql_connect"
@@ -37,7 +36,7 @@ type jobsOpts struct {
 
 func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 	var (
-		errs *multierror.Error
+		errs []error
 		job  interfaces.Job
 		jobs []interfaces.Job
 	)
@@ -54,25 +53,25 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 		)
 
 		if len(j.Name) == 0 {
-			errs = multierror.Append(errs, fmt.Errorf("Empty job name is unacceptable "))
+			errs = append(errs, fmt.Errorf("Empty job name is unacceptable "))
 			continue
 		}
 
 		if misc.Contains([]string{"files", "databases", "external"}, j.Name) {
-			errs = multierror.Append(errs, fmt.Errorf("A job cannot have the name `%s` reserved", j.Name))
+			errs = append(errs, fmt.Errorf("A job cannot have the name `%s` reserved", j.Name))
 			continue
 		}
 
 		diskRate, err = getRateLimit(o.mainLim.DiskRate)
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("%s The job `%s` won't be use limit defined on job level for its storages", err, j.Name))
+			errs = append(errs, fmt.Errorf("%s The job `%s` won't be use limit defined on job level for its storages", err, j.Name))
 		}
 
 		if j.Limits != nil {
 			if j.Limits.NetRate != nil {
 				nrl, err = getRateLimit(j.Limits.NetRate)
 				if err != nil {
-					errs = multierror.Append(errs, fmt.Errorf("%s The job `%s` won't be use limit defined on job level for its storages", err, j.Name))
+					errs = append(errs, fmt.Errorf("%s The job `%s` won't be use limit defined on job level for its storages", err, j.Name))
 				} else {
 					withStorageRate = true
 				}
@@ -80,7 +79,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 			if j.Limits.DiskRate != nil {
 				diskRate, err = getRateLimit(j.Limits.DiskRate)
 				if err != nil {
-					errs = multierror.Append(errs, fmt.Errorf("%s The job `%s` won't be use limit defined on job level for its storages", err, j.Name))
+					errs = append(errs, fmt.Errorf("%s The job `%s` won't be use limit defined on job level for its storages", err, j.Name))
 				}
 			}
 		}
@@ -91,13 +90,13 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 			s, ok := o.storages[opt.StorageName]
 			if !ok {
 				stErrs++
-				errs = multierror.Append(errs, fmt.Errorf("Failed to set storage `%s` for job `%s`: storage not available ", opt.StorageName, j.Name))
+				errs = append(errs, fmt.Errorf("Failed to set storage `%s` for job `%s`: storage not available ", opt.StorageName, j.Name))
 				continue
 			}
 
 			if opt.Retention.Days < 0 || opt.Retention.Weeks < 0 || opt.Retention.Months < 0 {
 				stErrs++
-				errs = multierror.Append(errs, fmt.Errorf("Failed to set storage `%s` for job `%s`: retention period can't be negative ", opt.StorageName, j.Name))
+				errs = append(errs, fmt.Errorf("Failed to set storage `%s` for job `%s`: retention period can't be negative ", opt.StorageName, j.Name))
 				continue
 			}
 
@@ -389,7 +388,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 
 		case misc.External:
 			if j.SkipBackupRotate {
-				errs = multierror.Append(errs, fmt.Errorf("Used deprecated option `skip_backup_rotate` for job \"%s\". Use `storages_options[].enable_rotate` instead. ", j.Name))
+				errs = append(errs, fmt.Errorf("Used deprecated option `skip_backup_rotate` for job \"%s\". Use `storages_options[].enable_rotate` instead. ", j.Name))
 			}
 			job, err = external.Init(external.JobParams{
 				Name:             j.Name,
@@ -404,19 +403,19 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 			})
 
 		default:
-			errs = multierror.Append(errs, fmt.Errorf("Unknown job type \"%s\". Allowd types: %s ", j.Type, strings.Join(misc.AllowedBackupTypesList(), ", ")))
+			errs = append(errs, fmt.Errorf("Unknown job type \"%s\". Allowd types: %s ", j.Type, strings.Join(misc.AllowedBackupTypesList(), ", ")))
 			continue
 		}
 
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("Failed to init job `%s` with error: %w ", j.Name, err))
+			errs = append(errs, fmt.Errorf("Failed to init job `%s` with error: %w ", j.Name, err))
 		} else {
 			jobs = append(jobs, job)
 		}
 
 	}
 
-	return jobs, errs.ErrorOrNil()
+	return jobs, errors.Join(errs...)
 }
 
 func isGzip(sgz *bool, jgz bool) bool {

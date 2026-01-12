@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/go-multierror"
-
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/backend/files"
@@ -169,7 +167,7 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 		wLink string
 		dLink string
 	}
-	var errs *multierror.Error
+	var errs []error
 	filesMap := make(map[string]*fileLinks, 64)
 	filesToDeleteMap := make(map[string]*fileLinks, 64)
 
@@ -205,7 +203,7 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 				if err != nil {
 					logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to read a symlink for file '%s': %s",
 						file, err)
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 					continue
 				}
 				linkPath := filepath.Join(bakDir, link)
@@ -272,7 +270,7 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 				delFile = false
 				if err := moveFile(file, fl.wLink); err != nil {
 					logCh <- logger.Log(jobName, l.GetName()).Error(err)
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 				} else {
 					logCh <- logger.Log(jobName, l.GetName()).Debugf("Successfully moved old backup to %s", fl.wLink)
 					moved = true
@@ -280,13 +278,13 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 				if _, toDel = filesToDeleteMap[fl.dLink]; !toDel {
 					if err := os.Remove(fl.dLink); err != nil {
 						logCh <- logger.Log(jobName, l.GetName()).Error(err)
-						errs = multierror.Append(errs, err)
+						errs = append(errs, err)
 						break
 					}
 					relative, _ := filepath.Rel(filepath.Dir(fl.dLink), fl.wLink)
 					if err := os.Symlink(relative, fl.dLink); err != nil {
 						logCh <- logger.Log(jobName, l.GetName()).Error(err)
-						errs = multierror.Append(errs, err)
+						errs = append(errs, err)
 					} else {
 						logCh <- logger.Log(jobName, l.GetName()).Debugf("Successfully changed symlink %s", fl.dLink)
 					}
@@ -298,7 +296,7 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 				delFile = false
 				if err := moveFile(file, fl.dLink); err != nil {
 					logCh <- logger.Log(jobName, l.GetName()).Error(err)
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 				} else {
 					logCh <- logger.Log(jobName, l.GetName()).Debugf("Successfully moved old backup to %s", fl.dLink)
 				}
@@ -309,18 +307,18 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 			if err := os.Remove(file); err != nil {
 				logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to delete file '%s' with next error: %s",
 					file, err)
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			} else {
 				logCh <- logger.Log(jobName, l.GetName()).Infof("Deleted old backup file '%s'", file)
 			}
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (l *Local) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
-	var errs *multierror.Error
+	var errs []error
 
 	if full {
 		backupDir := path.Join(l.backupPath, ofsPart)
@@ -330,7 +328,7 @@ func (l *Local) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 				return nil
 			} else {
 				logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			}
 		}
 	} else {
@@ -367,7 +365,7 @@ func (l *Local) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 					if err = os.RemoveAll(path.Join(backupDir, dirName)); err != nil {
 						logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
 							dirName, backupDir, err)
-						errs = multierror.Append(errs, err)
+						errs = append(errs, err)
 					} else {
 						logCh <- logger.Log(jobName, l.GetName()).Infof("Deleted old backup '%s' in directory '%s'", dirName, backupDir)
 					}
@@ -376,7 +374,7 @@ func (l *Local) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (l *Local) GetFileReader(filePath string) (io.Reader, error) {

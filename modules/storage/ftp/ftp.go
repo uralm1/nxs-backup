@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/jlaffaye/ftp"
 
 	"github.com/uralm1/nxs-backup/interfaces"
@@ -169,7 +168,7 @@ func (f *FTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 }
 
 func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string, safety bool) error {
-	var errs *multierror.Error
+	var errs []error
 
 	for _, p := range RetentionPeriodsList {
 		retentionCount, retentionDate := GetRetention(p, f.Retention)
@@ -231,18 +230,18 @@ func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string,
 			if err != nil {
 				logCh <- logger.Log(job, f.name).Errorf("Failed to delete file '%s' in remote directory '%s' with next error: %s",
 					file.Name, bakDir, err)
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			} else {
 				logCh <- logger.Log(job, f.name).Infof("Deleted old backup file '%s' in remote directory '%s'", file.Name, bakDir)
 			}
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (f *FTP) deleteIncrBackup(logCh chan logger.LogRecord, job, ofsPart string, full bool) error {
-	var errs *multierror.Error
+	var errs []error
 
 	if err := f.updateConn(); err != nil {
 		return err
@@ -262,7 +261,7 @@ func (f *FTP) deleteIncrBackup(logCh chan logger.LogRecord, job, ofsPart string,
 
 		if err := f.conn.RemoveDirRecur(backupDir); err != nil {
 			logCh <- logger.Log(job, f.name).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	} else {
 		intMoy, _ := strconv.Atoi(misc.GetDateTimeNow("moy"))
@@ -292,7 +291,7 @@ func (f *FTP) deleteIncrBackup(logCh chan logger.LogRecord, job, ofsPart string,
 					if err = f.conn.RemoveDirRecur(path.Join(backupDir, dir.Name)); err != nil {
 						logCh <- logger.Log(job, f.name).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
 							dir.Name, backupDir, err)
-						errs = multierror.Append(errs, err)
+						errs = append(errs, err)
 					} else {
 						logCh <- logger.Log(job, f.name).Infof("Deleted old backup '%s' in directory '%s'", dir.Name, backupDir)
 					}
@@ -301,7 +300,7 @@ func (f *FTP) deleteIncrBackup(logCh chan logger.LogRecord, job, ofsPart string,
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (f *FTP) mkDir(dstPath string) error {

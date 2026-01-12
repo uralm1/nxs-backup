@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/uralm1/nxs-backup/ds/mongo_connect"
@@ -243,7 +242,7 @@ func (j *job) CleanupTmpData() error {
 }
 
 func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
-	var errs *multierror.Error
+	var errs []error
 
 	for ofsPart, tgt := range j.targets {
 		startTime := time.Now()
@@ -261,7 +260,7 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 
 		if err := os.MkdirAll(path.Dir(tmpBackupFile), os.ModePerm); err != nil {
 			logCh <- logger.Log(j.name, "").Errorf("Unable to create tmp dir with next error: %s", err)
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 			continue
 		}
 
@@ -270,7 +269,7 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 				metrics.BackupTime: float64(time.Since(startTime).Nanoseconds() / 1e6),
 			})
 			logCh <- logger.Log(j.name, "").Errorf("Unable to create temp backups %s", tmpBackupFile)
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 			continue
 		}
 		fileInfo, _ := os.Stat(tmpBackupFile)
@@ -287,17 +286,17 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 		if !j.deferredCopying {
 			if err := j.storages.Delivery(logCh, j); err != nil {
 				logCh <- logger.Log(j.name, "").Errorf("Failed to delivery backup. Errors: %v", err)
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			}
 		}
 	}
 
 	if err := j.storages.Delivery(logCh, j); err != nil {
 		logCh <- logger.Log(j.name, "").Errorf("Failed to delivery backup. Errors: %v", err)
-		errs = multierror.Append(errs, err)
+		errs = append(errs, err)
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (j *job) createTmpBackup(logCh chan logger.LogRecord, tmpBackupFile string, target target) error {

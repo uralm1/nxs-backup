@@ -1,12 +1,12 @@
 package start_backup
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/nightlyone/lockfile"
 
 	"github.com/uralm1/nxs-backup/interfaces"
@@ -57,18 +57,16 @@ func Init(o Opts) *startBackup {
 }
 
 func (sb *startBackup) Run() {
-	var (
-		err  error
-		errs *multierror.Error
-	)
+	var err error
+	var errs []error
 
 	defer func() {
 		if err = sb.metricsData.SaveFile(); err != nil {
 			sb.evCh <- logger.Log("", "").Errorf("Failed to save metrics to file: %v", err)
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
-		if errs.ErrorOrNil() != nil {
-			err = fmt.Errorf("Some of backups failed with next errors:\n%w", errs)
+		if len(errs) > 0 {
+			err = fmt.Errorf("Some of backups failed with next errors:\n%w", errors.Join(errs...))
 		}
 		sb.done <- err
 	}()
@@ -99,7 +97,7 @@ func (sb *startBackup) Run() {
 		err = lock.TryLock()
 	}
 	if err != nil {
-		err = fmt.Errorf("Can't start nxs-backup. Another nxs-backup process already running. ")
+		err = fmt.Errorf("Can't start nxs-backup. Another nxs-backup process is already running. ")
 		sb.evCh <- logger.Log("", "").Error(err)
 		return
 	}
@@ -110,7 +108,7 @@ func (sb *startBackup) Run() {
 			sb.evCh <- logger.Log("", "").Info("Starting backup external jobs.")
 			for _, job := range sb.extJobs {
 				if err := backup.Perform(sb.evCh, job); err != nil {
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 				}
 			}
 		} else {
@@ -122,7 +120,7 @@ func (sb *startBackup) Run() {
 			sb.evCh <- logger.Log("", "").Info("Starting backup databases jobs.")
 			for _, job := range sb.dbJobs {
 				if err := backup.Perform(sb.evCh, job); err != nil {
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 				}
 			}
 		} else {
@@ -134,7 +132,7 @@ func (sb *startBackup) Run() {
 			sb.evCh <- logger.Log("", "").Info("Starting backup files jobs.")
 			for _, job := range sb.fileJobs {
 				if err := backup.Perform(sb.evCh, job); err != nil {
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 				}
 			}
 		} else {
@@ -144,7 +142,7 @@ func (sb *startBackup) Run() {
 
 	if job, ok := sb.jobs[sb.jobName]; ok {
 		if err = backup.Perform(sb.evCh, job); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	}
 

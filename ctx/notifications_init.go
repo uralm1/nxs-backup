@@ -1,13 +1,14 @@
 package ctx
 
 import (
+	"errors"
 	"fmt"
-	"github.com/hashicorp/go-multierror"
-	"github.com/uralm1/nxs-backup/modules/notifier/mailer"
-	"github.com/uralm1/nxs-backup/modules/notifier/webhooker"
-	"github.com/sirupsen/logrus"
 	"net/mail"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+	"github.com/uralm1/nxs-backup/modules/notifier/mailer"
+	"github.com/uralm1/nxs-backup/modules/notifier/webhooker"
 
 	"github.com/uralm1/nxs-backup/interfaces"
 )
@@ -22,26 +23,26 @@ var messageLevels = map[string]logrus.Level{
 }
 
 func notifiersInit(c *Ctx, conf ConfOpts) error {
-	var errs *multierror.Error
+	var errs []error
 	var ns []interfaces.Notifier
 
 	if conf.Notifications.Mail.Enabled {
-		var mailErrs *multierror.Error
+		var mailErrs []error
 		mailList := conf.Notifications.Mail.Recipients
 		for _, a := range mailList {
 			_, err := mail.ParseAddress(a)
 			if err != nil {
-				mailErrs = multierror.Append(mailErrs, fmt.Errorf("Email init fail. Failed to parse email \"%s\". %v ", a, err))
+				mailErrs = append(mailErrs, fmt.Errorf("Email init fail. Failed to parse email \"%s\". %v ", a, err))
 			}
 		}
 		if _, err := mail.ParseAddress(conf.Notifications.Mail.From); err != nil {
-			mailErrs = multierror.Append(mailErrs, fmt.Errorf("Email init fail. Failed to parse `mail_from` \"%s\". %v ", conf.Notifications.Mail.From, err))
+			mailErrs = append(mailErrs, fmt.Errorf("Email init fail. Failed to parse `mail_from` \"%s\". %v ", conf.Notifications.Mail.From, err))
 		}
 
 		ml, ok := messageLevels[strings.ToUpper(conf.Notifications.Mail.MessageLevel)]
 		if ok {
-			if mailErrs != nil {
-				errs = multierror.Append(errs, mailErrs.Errors...)
+			if len(mailErrs) > 0 {
+				errs = append(errs, mailErrs...)
 			} else {
 				m, err := mailer.Init(mailer.Opts{
 					From:         conf.Notifications.Mail.From,
@@ -55,13 +56,13 @@ func notifiersInit(c *Ctx, conf ConfOpts) error {
 					ServerName:   conf.ServerName,
 				})
 				if err != nil {
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 				} else {
 					ns = append(ns, m)
 				}
 			}
 		} else {
-			errs = multierror.Append(fmt.Errorf("Email init fail. Unknown message level. Available levels: 'INFO', 'WARN', 'ERR' "))
+			errs = append(errs, fmt.Errorf("Email init fail. Unknown message level. Available levels: 'INFO', 'WARN', 'ERR' "))
 		}
 	}
 
@@ -80,17 +81,17 @@ func notifiersInit(c *Ctx, conf ConfOpts) error {
 					ServerName:        conf.ServerName,
 				})
 				if err != nil {
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 				} else {
 					ns = append(ns, a)
 				}
 			} else {
-				errs = multierror.Append(errs, fmt.Errorf("Webhook init fail. Unknown message level. Available levels: 'INFO', 'WARN', 'ERR' "))
+				errs = append(errs, fmt.Errorf("Webhook init fail. Unknown message level. Available levels: 'INFO', 'WARN', 'ERR' "))
 			}
 		}
 	}
 
 	c.Notifiers = ns
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }

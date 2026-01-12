@@ -13,7 +13,6 @@ import (
 	"github.com/uralm1/nxs-backup/modules/cmd_handler/list_backups"
 
 	"github.com/docker/go-units"
-	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 
 	"github.com/uralm1/nxs-backup/interfaces"
@@ -42,7 +41,7 @@ type app struct {
 	fileJobs    interfaces.Jobs
 	dbJobs      interfaces.Jobs
 	extJobs     interfaces.Jobs
-	initErrs    *multierror.Error
+	initErr     error
 	metricsData *metrics.Data
 	serverBind  string
 }
@@ -99,7 +98,7 @@ func AppCtxInit() (*Ctx, error) {
 		}
 		c.Cmd = test_config.Init(
 			test_config.Opts{
-				InitErr:  a.initErrs.ErrorOrNil(),
+				InitErr:  a.initErr,
 				Done:     c.Done,
 				FileJobs: a.fileJobs,
 				DBJobs:   a.dbJobs,
@@ -113,7 +112,7 @@ func AppCtxInit() (*Ctx, error) {
 		}
 		c.Cmd = list_backups.Init(
 			list_backups.Opts{
-				InitErr:  a.initErrs.ErrorOrNil(),
+				InitErr:  a.initErr,
 				Done:     c.Done,
 				JobName:  ra.CmdParams.(*StartCmd).JobName,
 				FileJobs: a.fileJobs,
@@ -129,7 +128,7 @@ func AppCtxInit() (*Ctx, error) {
 		}
 		c.Cmd = start_backup.Init(
 			start_backup.Opts{
-				InitErr:     a.initErrs.ErrorOrNil(),
+				InitErr:     a.initErr,
 				Done:        c.Done,
 				EvCh:        c.EventCh,
 				WaitPrev:    a.waitTimeout,
@@ -218,7 +217,7 @@ func appInit(c *Ctx, cfgPath string) (app, error) {
 
 	// Notifications init
 	if err = notifiersInit(c, conf); err != nil {
-		a.initErrs = multierror.Append(a.initErrs, err.(*multierror.Error).WrappedErrors()...)
+		a.initErr = errors.Join(a.initErr, err)
 	}
 
 	noLim := "0"
@@ -241,7 +240,7 @@ func appInit(c *Ctx, cfgPath string) (app, error) {
 	// Init app
 	storages, err := storagesInit(conf.StorageConnects, lim)
 	if err != nil {
-		a.initErrs = multierror.Append(a.initErrs, err.(*multierror.Error).WrappedErrors()...)
+		a.initErr = errors.Join(a.initErr, err)
 	}
 
 	jobs, err := jobsInit(
@@ -253,7 +252,7 @@ func appInit(c *Ctx, cfgPath string) (app, error) {
 		},
 	)
 	if err != nil {
-		a.initErrs = multierror.Append(a.initErrs, err.(*multierror.Error).WrappedErrors()...)
+		a.initErr = errors.Join(a.initErr, err)
 	}
 
 	for _, job := range jobs {

@@ -10,9 +10,8 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hirochachacha/go-smb2 v1.1.0
-	github.com/jlaffaye/ftp v0.2.0
+	github.com/jlaffaye/ftp v0.2.1-0.20251026020404-6602e981a1bb
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/juju/ratelimit v1.0.2
 	github.com/klauspost/pgzip v1.2.6
@@ -56,6 +55,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect

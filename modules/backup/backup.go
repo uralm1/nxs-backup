@@ -1,12 +1,11 @@
 package backup
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
-
-	"github.com/hashicorp/go-multierror"
 
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
@@ -14,7 +13,7 @@ import (
 )
 
 func Perform(logCh chan logger.LogRecord, job interfaces.Job) error {
-	var errs *multierror.Error
+	var errs []error
 	var tmpDirPath string
 
 	if !job.NeedToMakeBackup() {
@@ -29,7 +28,7 @@ func Perform(logCh chan logger.LogRecord, job interfaces.Job) error {
 
 	if !job.IsBackupSafety() {
 		if err := job.DeleteOldBackups(logCh, ""); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	}
 
@@ -40,13 +39,14 @@ func Perform(logCh chan logger.LogRecord, job interfaces.Job) error {
 		err := os.MkdirAll(tmpDirPath, os.ModePerm)
 		if err != nil {
 			logCh <- logger.Log(job.GetName(), "").Errorf("Job `%s` failed. Unable to create tmp dir with next error: %s", job.GetName(), err)
-			errs = multierror.Append(errs, err)
-			return errs.ErrorOrNil()
+			errs = append(errs, err)
+
+			return errors.Join(errs...)
 		}
 	}
 
 	if err := job.DoBackup(logCh, tmpDirPath); err != nil {
-		errs = multierror.Append(errs, err)
+		errs = append(errs, err)
 	}
 
 	_ = job.CleanupTmpData()
@@ -67,11 +67,11 @@ func Perform(logCh chan logger.LogRecord, job interfaces.Job) error {
 
 	if job.IsBackupSafety() {
 		if err := job.DeleteOldBackups(logCh, ""); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	}
 
 	logCh <- logger.Log(job.GetName(), "").Info("Finished")
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }

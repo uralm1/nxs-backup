@@ -2,6 +2,7 @@ package mysql_logical
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,7 +10,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/ini.v1"
 
@@ -218,7 +218,7 @@ func (j *job) CleanupTmpData() error {
 }
 
 func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
-	var errs *multierror.Error
+	var errs []error
 
 	for ofsPart, tgt := range j.targets {
 		startTime := time.Now()
@@ -236,7 +236,7 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 		err := os.MkdirAll(path.Dir(tmpBackupFile), os.ModePerm)
 		if err != nil {
 			logCh <- logger.Log(j.name, "").Errorf("Unable to create tmp dir with next error: %s", err)
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 			continue
 		}
 
@@ -245,7 +245,7 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 				metrics.BackupTime: float64(time.Since(startTime).Nanoseconds() / 1e6),
 			})
 			logCh <- logger.Log(j.name, "").Errorf("Unable to create temp backups %s", tmpBackupFile)
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 			continue
 		}
 		fileInfo, _ := os.Stat(tmpBackupFile)
@@ -262,27 +262,26 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 		if !j.deferredCopying {
 			if err = j.storages.Delivery(logCh, j); err != nil {
 				logCh <- logger.Log(j.name, "").Errorf("Failed to delivery backup. Errors: %v", err)
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			}
 		}
 	}
 
 	if err := j.storages.Delivery(logCh, j); err != nil {
 		logCh <- logger.Log(j.name, "").Errorf("Failed to delivery backup. Errors: %v", err)
-		errs = multierror.Append(errs, err)
+		errs = append(errs, err)
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (j *job) createTmpBackup(logCh chan logger.LogRecord, tmpBackupFile string, target target) error {
-	var errs *multierror.Error
+	var errs []error
 
 	backupWriter, err := targz.GetGZipFileWriter(tmpBackupFile, target.gzip, j.diskRateLimit)
 	if err != nil {
 		logCh <- logger.Log(j.name, "").Errorf("Unable to create tmp file. Error: %s", err)
-		errs = multierror.Append(errs, err)
-		return errs
+		return errors.Join(append(errs, err)...)
 	}
 	defer func() { _ = backupWriter.Close() }()
 
@@ -290,15 +289,14 @@ func (j *job) createTmpBackup(logCh chan logger.LogRecord, tmpBackupFile string,
 		_, err = target.connect.Exec("STOP SLAVE")
 		if err != nil {
 			logCh <- logger.Log(j.name, "").Errorf("Unable to stop slave. Error: %s", err)
-			errs = multierror.Append(errs, err)
-			return errs
+			return errors.Join(append(errs, err)...)
 		}
 		logCh <- logger.Log(j.name, "").Infof("Slave stopped")
 		defer func() {
 			_, err = target.connect.Exec("START SLAVE")
 			if err != nil {
 				logCh <- logger.Log(j.name, "").Errorf("Unable to start slave. Error: %s", err)
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			} else {
 				logCh <- logger.Log(j.name, "").Infof("Slave started")
 			}
@@ -308,8 +306,7 @@ func (j *job) createTmpBackup(logCh chan logger.LogRecord, tmpBackupFile string,
 	authFile, err := files.CreateTmpMysqlAuthFile(target.authFile)
 	if err != nil {
 		logCh <- logger.Log(j.name, "").Errorf("Failed to create tmp auth file. Error: %s", err)
-		errs = multierror.Append(errs, err)
-		return errs.ErrorOrNil()
+		return errors.Join(append(errs, err)...)
 	}
 	defer func() {
 		if err = files.DeleteTmpMysqlAuthFile(authFile); err != nil {
@@ -340,20 +337,18 @@ func (j *job) createTmpBackup(logCh chan logger.LogRecord, tmpBackupFile string,
 
 	if err = cmd.Start(); err != nil {
 		logCh <- logger.Log(j.name, "").Errorf("Unable to start mysqldump. Error: %s", err)
-		errs = multierror.Append(errs, err)
-		return errs
+		return errors.Join(append(errs, err)...)
 	}
 	logCh <- logger.Log(j.name, "").Infof("Starting a `%s` dump", target.dbName)
 
 	if err = cmd.Wait(); err != nil {
 		logCh <- logger.Log(j.name, "").Errorf("Unable to dump `%s`. Error: %s", target.dbName, stderr.String())
-		errs = multierror.Append(errs, err)
-		return errs
+		return errors.Join(append(errs, err)...)
 	}
 
 	logCh <- logger.Log(j.name, "").Infof("Dump of `%s` completed", target.dbName)
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (j *job) Close() error {

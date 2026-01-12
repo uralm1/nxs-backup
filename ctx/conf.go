@@ -2,14 +2,13 @@ package ctx
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/hashicorp/go-multierror"
 
 	"github.com/uralm1/nxs-backup/conf"
 
@@ -258,7 +257,7 @@ func (c *ConfOpts) readExtraConfigs() error {
 			return err
 		}
 
-		var errs *multierror.Error
+		var errs []error
 		for _, cfgFile := range confs {
 			var j jobConf
 
@@ -268,14 +267,14 @@ func (c *ConfOpts) readExtraConfigs() error {
 				UnknownDeny: true,
 			})
 			if err != nil {
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			}
 
 			c.Jobs = append(c.Jobs, j)
 		}
 
-		if errs != nil {
-			return errs
+		if len(errs) > 0 {
+			return errors.Join(errs...)
 		}
 	}
 

@@ -1,10 +1,9 @@
 package ctx
 
 import (
+	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/hashicorp/go-multierror"
 
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/modules/storage/ftp"
@@ -29,7 +28,7 @@ var allowedConnectParams = []string{
 func storagesInit(storageConnects []storageConnectConf, mainLim *limitsConf) (storagesMap map[string]interfaces.Storage, err error) {
 	var (
 		rl      int64
-		errs    *multierror.Error
+		errs    []error
 		storage interfaces.Storage
 	)
 
@@ -37,13 +36,13 @@ func storagesInit(storageConnects []storageConnectConf, mainLim *limitsConf) (st
 
 	rl, err = getRateLimit(mainLim.DiskRate)
 	if err != nil {
-		errs = multierror.Append(errs, fmt.Errorf("%s The limit won't be used for storage `local`", err))
+		errs = append(errs, fmt.Errorf("%s The limit won't be used for storage `local`", err))
 	}
 	storagesMap["local"] = local.Init(rl)
 
 	for _, st := range storageConnects {
 		if _, exist := storagesMap[st.Name]; exist {
-			errs = multierror.Append(errs, fmt.Errorf("Storage with the name `%s` already defined. Please update configs ", st.Name))
+			errs = append(errs, fmt.Errorf("Storage with the name `%s` already defined. Please update configs ", st.Name))
 			continue
 		}
 
@@ -53,7 +52,7 @@ func storagesInit(storageConnects []storageConnectConf, mainLim *limitsConf) (st
 			rl, err = getRateLimit(mainLim.NetRate)
 		}
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("%s The limit won't be used for storage `%s`", err, st.Name))
+			errs = append(errs, fmt.Errorf("%s The limit won't be used for storage `%s`", err, st.Name))
 		}
 
 		switch {
@@ -76,11 +75,11 @@ func storagesInit(storageConnects []storageConnectConf, mainLim *limitsConf) (st
 		}
 
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("Failed to init storage `%s` with error: %w ", st.Name, err))
+			errs = append(errs, fmt.Errorf("Failed to init storage `%s` with error: %w ", st.Name, err))
 		} else {
 			storagesMap[st.Name] = storage
 		}
 	}
 
-	return storagesMap, errs.ErrorOrNil()
+	return storagesMap, errors.Join(errs...)
 }

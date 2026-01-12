@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 
@@ -217,7 +216,7 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 		wLink string
 		dLink string
 	}
-	var errs *multierror.Error
+	var errs []error
 	filesMap := make(map[string]*fileLinks, 64)
 	filesToDeleteMap := make(map[string]*fileLinks, 64)
 
@@ -244,7 +243,7 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 				if err != nil {
 					logCh <- logger.Log(jobName, s.name).Errorf("Failed to read a symlink for file '%s': %s",
 						file, err)
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 					continue
 				}
 				linkPath := filepath.Join(bakDir, link)
@@ -307,7 +306,7 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 				delFile = false
 				if err := s.moveFile(file, fl.wLink); err != nil {
 					logCh <- logger.Log(jobName, s.name).Error(err)
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 				} else {
 					logCh <- logger.Log(jobName, s.name).Debugf("Successfully moved old backup to %s", fl.wLink)
 					moved = true
@@ -315,13 +314,13 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 				if _, toDel = filesToDeleteMap[fl.dLink]; !toDel {
 					if err := s.client.Remove(fl.dLink); err != nil {
 						logCh <- logger.Log(jobName, s.name).Error(err)
-						errs = multierror.Append(errs, err)
+						errs = append(errs, err)
 						break
 					}
 					relative, _ := filepath.Rel(filepath.Dir(fl.dLink), fl.wLink)
 					if err := s.client.Symlink(relative, fl.dLink); err != nil {
 						logCh <- logger.Log(jobName, s.name).Error(err)
-						errs = multierror.Append(errs, err)
+						errs = append(errs, err)
 					} else {
 						logCh <- logger.Log(jobName, s.name).Debugf("Successfully changed symlink %s", fl.dLink)
 					}
@@ -333,7 +332,7 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 				delFile = false
 				if err := s.moveFile(file, fl.dLink); err != nil {
 					logCh <- logger.Log(jobName, s.name).Error(err)
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 				} else {
 					logCh <- logger.Log(jobName, s.name).Debugf("Successfully moved old backup to %s", fl.dLink)
 				}
@@ -344,18 +343,18 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 			if err := s.client.Remove(file); err != nil {
 				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with next error: %s",
 					file, err)
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			} else {
 				logCh <- logger.Log(jobName, s.name).Infof("Deleted old backup file '%s'", file)
 			}
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
-	var errs *multierror.Error
+	var errs []error
 
 	if full {
 		backupDir := path.Join(s.backupPath, ofsPart)
@@ -365,7 +364,7 @@ func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 				return nil
 			}
 			logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	} else {
 		intMoy, _ := strconv.Atoi(misc.GetDateTimeNow("moy"))
@@ -400,7 +399,7 @@ func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 					if err = s.client.Remove(path.Join(backupDir, dirName)); err != nil {
 						logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
 							dirName, backupDir, err)
-						errs = multierror.Append(errs, err)
+						errs = append(errs, err)
 					} else {
 						logCh <- logger.Log(jobName, s.name).Infof("Deleted old backup '%s' in directory '%s'", dirName, backupDir)
 					}
@@ -409,7 +408,7 @@ func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (s *SFTP) GetFileReader(ofsPath string) (io.Reader, error) {

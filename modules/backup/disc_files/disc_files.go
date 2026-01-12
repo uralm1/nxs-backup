@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/mb0/glob"
 
 	"github.com/uralm1/nxs-backup/interfaces"
@@ -210,7 +209,7 @@ func (j *job) NeedToUpdateIncMeta() bool {
 }
 
 func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
-	var errs *multierror.Error
+	var errs []error
 
 	for ofsPart, tgt := range j.targets {
 		startTime := time.Now()
@@ -228,7 +227,7 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 		err := os.MkdirAll(path.Dir(tmpBackupFile), os.ModePerm)
 		if err != nil {
 			logCh <- logger.Log(j.name, "").Errorf("Unable to create tmp dir with next error: %s", err)
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 			continue
 		}
 
@@ -249,7 +248,7 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 			if errors.As(err, &serr) {
 				logCh <- logger.Log(j.name, "").Debugf("STDERR: %s", serr.Stderr)
 			}
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 			continue
 		}
 		fileInfo, _ := os.Stat(tmpBackupFile)
@@ -265,17 +264,17 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 		if !j.deferredCopying {
 			if err = j.storages.Delivery(logCh, j); err != nil {
 				logCh <- logger.Log(j.name, "").Errorf("Failed to delivery backup. Errors: %v", err)
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			}
 		}
 	}
 
 	if err := j.storages.Delivery(logCh, j); err != nil {
 		logCh <- logger.Log(j.name, "").Errorf("Failed to delivery backup. Errors: %v", err)
-		errs = multierror.Append(errs, err)
+		errs = append(errs, err)
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (j *job) Close() error {

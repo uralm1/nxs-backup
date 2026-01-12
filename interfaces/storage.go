@@ -1,12 +1,11 @@
 package interfaces
 
 import (
+	"errors"
 	"io"
 	"os"
 	"path"
 	"time"
-
-	"github.com/hashicorp/go-multierror"
 
 	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/logger"
@@ -40,55 +39,55 @@ func (s Storages) Less(i, j int) bool { return s[i].IsLocal() < s[j].IsLocal() }
 func (s Storages) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 func (s Storages) DeleteOldBackups(logCh chan logger.LogRecord, j Job, ofsPath string) error {
-	errs := new(multierror.Error)
+	var errs []error
 
 	for _, st := range s {
 		if ofsPath != "" {
 			err := st.DeleteOldBackups(logCh, ofsPath, j, true)
 			if err != nil {
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			}
 		} else {
 			for _, ofsPart := range j.GetTargetOfsList() {
 				err := st.DeleteOldBackups(logCh, ofsPart, j, false)
 				if err != nil {
-					errs = multierror.Append(errs, err)
+					errs = append(errs, err)
 				}
 			}
 		}
 	}
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (s Storages) Delivery(logCh chan logger.LogRecord, job Job) error {
-	errs := new(multierror.Error)
+	var errs []error
 
 	for ofs, dumpObj := range job.GetDumpObjects() {
 		if dumpObj.Delivered {
 			continue
 		}
-		deliveryErrs := new(multierror.Error)
+		var deliveryErrs []error
 		startTime := time.Now()
 		ok := float64(0)
 		for _, st := range s {
 			if err := st.DeliveryBackup(logCh, job.GetName(), dumpObj.TmpFile, ofs, string(job.GetType())); err != nil {
-				deliveryErrs = multierror.Append(deliveryErrs, err)
+				deliveryErrs = append(deliveryErrs, err)
 			}
 		}
-		if deliveryErrs.Len() == 0 {
+		if len(deliveryErrs) == 0 {
 			ok = float64(1)
 		}
 		job.SetOfsMetrics(ofs, map[string]float64{
 			metrics.DeliveryOk:   ok,
 			metrics.DeliveryTime: float64(time.Since(startTime).Nanoseconds() / 1e6),
 		})
-		if deliveryErrs.Len() < len(s) {
+		if len(deliveryErrs) < len(s) {
 			job.SetDumpObjectDelivered(ofs)
 		}
-		errs = multierror.Append(errs, deliveryErrs.ErrorOrNil())
+		errs = append(errs, deliveryErrs...)
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (s Storages) ListBackups(ofs string) TargetsOnStorages {
@@ -105,7 +104,7 @@ func (s Storages) ListBackups(ofs string) TargetsOnStorages {
 }
 
 func (s Storages) CleanupTmpData(job Job) error {
-	errs := new(multierror.Error)
+	var errs []error
 
 	for _, dumpObj := range job.GetDumpObjects() {
 
@@ -121,10 +120,10 @@ func (s Storages) CleanupTmpData(job Job) error {
 
 		// cleanup tmp backup file
 		if err := os.Remove(tmpBakFile); err != nil {
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	}
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (s Storages) Close() error {

@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	"github.com/vmware/go-nfs-client/nfs"
 	"github.com/vmware/go-nfs-client/nfs/rpc"
@@ -166,7 +165,7 @@ func (n *NFS) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 }
 
 func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
-	var errs *multierror.Error
+	var errs []error
 
 	for _, p := range RetentionPeriodsList {
 		retentionCount, retentionDate := GetRetention(p, n.Retention)
@@ -231,18 +230,18 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 			if err != nil {
 				logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete file '%s' in remote directory '%s' with next error: %s",
 					file.Name(), bakDir, err)
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			} else {
 				logCh <- logger.Log(jobName, n.name).Infof("Deleted old backup file '%s' in remote directory '%s'", file.Name(), bakDir)
 			}
 		}
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
 func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
-	var errs *multierror.Error
+	var errs []error
 
 	if full {
 		backupDir := path.Join(n.backupPath, ofsPart)
@@ -250,7 +249,7 @@ func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 		err := n.target.RemoveAll(backupDir)
 		if err != nil {
 			logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	} else {
 		intMoy, _ := strconv.Atoi(misc.GetDateTimeNow("moy"))
@@ -282,7 +281,7 @@ func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 					if err = n.target.RemoveAll(path.Join(backupDir, dirName)); err != nil {
 						logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
 							dir.Name(), backupDir, err)
-						errs = multierror.Append(errs, err)
+						errs = append(errs, err)
 					} else {
 						logCh <- logger.Log(jobName, n.name).Infof("Deleted old backup '%s' in directory '%s'", dir.Name(), backupDir)
 					}
@@ -291,7 +290,7 @@ func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (n *NFS) mkDir(dstPath string) error {

@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
-
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/backend/files"
@@ -156,7 +154,7 @@ func (wd *WebDav) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, 
 }
 
 func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
-	var errs *multierror.Error
+	var errs []error
 
 	for _, p := range RetentionPeriodsList {
 		retentionCount, retentionDate := GetRetention(p, wd.Retention)
@@ -207,18 +205,18 @@ func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart
 			if err != nil {
 				logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete file '%s' in remote directory '%s' with next error: %s",
 					file.Name(), bakDir, err)
-				errs = multierror.Append(errs, err)
+				errs = append(errs, err)
 			} else {
 				logCh <- logger.Log(jobName, wd.name).Infof("Deleted old backup file '%s' in remote directory '%s'", file.Name(), bakDir)
 			}
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (wd *WebDav) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
-	var errs *multierror.Error
+	var errs []error
 
 	if full {
 		backupDir := path.Join(wd.backupPath, ofsPart)
@@ -226,7 +224,7 @@ func (wd *WebDav) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart
 		err := wd.client.Rm(backupDir)
 		if err != nil {
 			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	} else {
 		intMoy, _ := strconv.Atoi(misc.GetDateTimeNow("moy"))
@@ -257,7 +255,7 @@ func (wd *WebDav) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart
 					if err = wd.client.Rm(path.Join(backupDir, dirName)); err != nil {
 						logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
 							dirName, backupDir, err)
-						errs = multierror.Append(errs, err)
+						errs = append(errs, err)
 					} else {
 						logCh <- logger.Log(jobName, wd.name).Infof("Deleted old backup '%s' in directory '%s'", dirName, backupDir)
 					}
@@ -266,7 +264,7 @@ func (wd *WebDav) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 func (wd *WebDav) mkDir(dstPath string) error {
