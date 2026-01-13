@@ -153,7 +153,7 @@ func (wd *WebDav) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, 
 	}
 }
 
-func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
+func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safe_rotation bool) error {
 	var errs []error
 
 	for _, p := range RetentionPeriodsList {
@@ -177,7 +177,7 @@ func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart
 				return wdFiles[i].ModTime().Before(wdFiles[j].ModTime())
 			})
 
-			if !safety {
+			if !safe_rotation {
 				retentionCount--
 			}
 			if retentionCount <= len(wdFiles) {

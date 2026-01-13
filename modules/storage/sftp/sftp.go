@@ -211,7 +211,7 @@ func (s *SFTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job
 	}
 }
 
-func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
+func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safe_rotation bool) error {
 	type fileLinks struct {
 		wLink string
 		dLink string
@@ -266,7 +266,7 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 				return files[i].ModTime().Before(files[j].ModTime())
 			})
 
-			if !safety {
+			if !safe_rotation {
 				retentionCount--
 			}
 			if retentionCount <= len(files) {

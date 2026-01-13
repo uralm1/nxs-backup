@@ -162,7 +162,7 @@ func (l *Local) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, jo
 	}
 }
 
-func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
+func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safe_rotation bool) error {
 	type fileLinks struct {
 		wLink string
 		dLink string
@@ -227,7 +227,7 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 				return iInfo.ModTime().Before(jInfo.ModTime())
 			})
 
-			if !safety {
+			if !safe_rotation {
 				retentionCount--
 			}
 

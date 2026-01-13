@@ -164,7 +164,7 @@ func (n *NFS) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 	}
 }
 
-func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safety bool) error {
+func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safe_rotation bool) error {
 	var errs []error
 
 	for _, p := range RetentionPeriodsList {
@@ -202,7 +202,7 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 				return nfsFiles[i].ModTime().Before(nfsFiles[j].ModTime())
 			})
 
-			if !safety {
+			if !safe_rotation {
 				retentionCount--
 			}
 			if retentionCount <= len(nfsFiles) {

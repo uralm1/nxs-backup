@@ -167,7 +167,7 @@ func (f *FTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 	}
 }
 
-func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string, safety bool) error {
+func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string, safe_rotation bool) error {
 	var errs []error
 
 	for _, p := range RetentionPeriodsList {
@@ -195,7 +195,7 @@ func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string,
 			sort.Slice(fptFiles, func(i, j int) bool {
 				return fptFiles[i].Time.Before(fptFiles[j].Time)
 			})
-			if !safety {
+			if !safe_rotation {
 				retentionCount--
 			}
 			if retentionCount <= len(fptFiles) {
