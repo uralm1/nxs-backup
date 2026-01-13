@@ -75,7 +75,7 @@ type webhookConf struct {
 }
 
 type jobConf struct {
-	SafetyBackup     bool            `conf:"safety_backup" conf_extraopts:"default=false"`
+	SafeRotation     bool            `conf:"safe_rotation" conf_extraopts:"default=false"`
 	DeferredCopying  bool            `conf:"deferred_copying" conf_extraopts:"default=false"`
 	SkipBackupRotate bool            `conf:"skip_backup_rotate" conf_extraopts:"default=false"` // deprecated, used by external
 	Gzip             bool            `conf:"gzip" conf_extraopts:"default=false"`

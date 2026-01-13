@@ -17,7 +17,7 @@ type jobCfgYml struct {
 	JobName         string            `yaml:"job_name"`
 	JobType         misc.BackupType   `yaml:"type"`
 	TmpDir          string            `yaml:"tmp_dir,omitempty"`
-	SafetyBackup    bool              `yaml:"safety_backup"`
+	SafeRotation    bool              `yaml:"safe_rotation"`
 	DeferredCopying bool              `yaml:"deferred_copying"`
 	Sources         []sourceYaml      `yaml:"sources"`
 	StoragesOptions []storageOptsYaml `yaml:"storages_options"`
@@ -161,7 +161,7 @@ func (gc *generateConfig) Run() {
 		JobName:         fmt.Sprintf("PROJECT-%s", gc.jobType),
 		JobType:         gc.jobType,
 		DeferredCopying: false,
-		SafetyBackup:    false,
+		SafeRotation:    false,
 		TmpDir:          "/var/nxs-backup/dump_tmp",
 	}
 	cfgName := gc.jobType + ".conf"
@@ -372,7 +372,7 @@ func (gc *generateConfig) Run() {
 	gc.done <- nil
 }
 
-func genStorageOpts(storages map[string]string, incBackup bool) (sts []storageOptsYaml) {
+func genStorageOpts(storages map[string]string, incrBackup bool) (sts []storageOptsYaml) {
 
 	defaultRetention := cfgRetentionYaml{
 		Days:   7,
@@ -380,7 +380,7 @@ func genStorageOpts(storages map[string]string, incBackup bool) (sts []storageOp
 		Months: 5,
 	}
 
-	if incBackup {
+	if incrBackup {
 		defaultRetention = cfgRetentionYaml{Months: 12}
 	}
 

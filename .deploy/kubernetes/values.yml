@@ -72,7 +72,7 @@ configMaps:
         - job_name: PROJECT-desc_files
           type: desc_files
           tmp_dir: /var/nxs-backup/dump_tmp
-          safety_backup: false
+          safe_rotation: false
           deferred_copying: false
           sources:
           - name: desc_files
@@ -95,7 +95,7 @@ configMaps:
         - job_name: PROJECT-inc_files
           type: inc_files
           tmp_dir: /var/nxs-backup/dump_tmp
-          safety_backup: false
+          safe_rotation: false
           deferred_copying: false
           sources:
           - name: inc_files
@@ -116,7 +116,7 @@ configMaps:
         - job_name: PROJECT-mysql
           type: mysql
           tmp_dir: /var/nxs-backup/dump_tmp
-          safety_backup: false
+          safe_rotation: false
           deferred_copying: false
           sources:
           - name: mysql
@@ -144,7 +144,7 @@ configMaps:
         - job_name: PROJECT-mysql_xtrabackup
           type: mysql_xtrabackup
           tmp_dir: /var/nxs-backup/dump_tmp
-          safety_backup: false
+          safe_rotation: false
           deferred_copying: false
           sources:
           - name: mysql_xtrabackup
@@ -168,7 +168,7 @@ configMaps:
         - job_name: PROJECT-postgresql
           type: postgresql
           tmp_dir: /var/nxs-backup/dump_tmp
-          safety_backup: false
+          safe_rotation: false
           deferred_copying: false
           sources:
           - name: psql
@@ -194,7 +194,7 @@ configMaps:
         - job_name: PROJECT-postgresql_basebackup
           type: postgresql_basebackup
           tmp_dir: /var/nxs-backup/dump_tmp
-          safety_backup: false
+          safe_rotation: false
           deferred_copying: false
           sources:
           - name: psql_basebackup
@@ -215,7 +215,7 @@ configMaps:
         - job_name: PROJECT-redis
           type: redis
           tmp_dir: /var/nxs-backup/dump_tmp
-          safety_backup: false
+          safe_rotation: false
           deferred_copying: false
           sources:
           - name: redis
@@ -234,7 +234,7 @@ configMaps:
         - job_name: PROJECT-mongodb
           type: mongodb
           tmp_dir: /var/nxs-backup/dump_tmp
-          safety_backup: false
+          safe_rotation: false
           deferred_copying: false
           sources:
           - name: mongodb
@@ -263,7 +263,7 @@ configMaps:
               months: 5
         - job_name: PROJECT-external
           type: external
-          safety_backup: false
+          safe_rotation: false
           deferred_copying: false
           sources: []
           storages_options:
@@ -277,7 +277,7 @@ configMaps:
         - job_name: PROJECT-mysql-remotes
           type: mysql
           tmp_dir: /var/nxs-backup/dump_tmp
-          safety_backup: false
+          safe_rotation: false
           deferred_copying: false
           sources:
           - name: mysql

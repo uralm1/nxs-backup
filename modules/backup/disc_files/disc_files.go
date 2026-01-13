@@ -23,7 +23,7 @@ type job struct {
 	name             string
 	tmpDir           string
 	needToMakeBackup bool
-	safetyBackup     bool
+	safeRotation     bool
 	deferredCopying  bool
 	diskRateLimit    int64
 	storages         interfaces.Storages
@@ -43,7 +43,7 @@ type JobParams struct {
 	Name             string
 	TmpDir           string
 	NeedToMakeBackup bool
-	SafetyBackup     bool
+	SafeRotation     bool
 	DeferredCopying  bool
 	DiskRateLimit    int64
 	Storages         interfaces.Storages
@@ -70,7 +70,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 		name:             jp.Name,
 		tmpDir:           jp.TmpDir,
 		needToMakeBackup: jp.NeedToMakeBackup,
-		safetyBackup:     jp.SafetyBackup,
+		safeRotation:     jp.SafeRotation,
 		deferredCopying:  jp.DeferredCopying,
 		diskRateLimit:    jp.DiskRateLimit,
 		storages:         jp.Storages,
@@ -187,8 +187,8 @@ func (j *job) SetDumpObjectDelivered(ofs string) {
 	j.dumpedObjects[ofs] = dumpObj
 }
 
-func (j *job) IsBackupSafety() bool {
-	return j.safetyBackup
+func (j *job) IsSafeRotation() bool {
+	return j.safeRotation
 }
 
 func (j *job) DeleteOldBackups(logCh chan logger.LogRecord, ofsPath string) error {
@@ -263,14 +263,14 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 		j.dumpedObjects[ofsPart] = interfaces.DumpObject{TmpFile: tmpBackupFile}
 		if !j.deferredCopying {
 			if err = j.storages.Delivery(logCh, j); err != nil {
-				logCh <- logger.Log(j.name, "").Errorf("Failed to delivery backup. Errors: %v", err)
+				logCh <- logger.Log(j.name, "").Errorf("Failed to deliver backup. Errors: %v", err)
 				errs = append(errs, err)
 			}
 		}
 	}
 
 	if err := j.storages.Delivery(logCh, j); err != nil {
-		logCh <- logger.Log(j.name, "").Errorf("Failed to delivery backup. Errors: %v", err)
+		logCh <- logger.Log(j.name, "").Errorf("Failed to deliver backup. Errors: %v", err)
 		errs = append(errs, err)
 	}
 

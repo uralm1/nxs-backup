@@ -152,7 +152,7 @@ func (f *FTP) copy(logCh chan logger.LogRecord, job, dst, src string) error {
 
 func (f *FTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
 	if !f.rotateEnabled {
-		logCh <- logger.Log(job.GetName(), f.name).Debugf("Backup rotate skipped by config.")
+		logCh <- logger.Log(job.GetName(), f.name).Debugf("Backup rotate skipped (disabled in config).")
 		return nil
 	}
 
@@ -163,7 +163,7 @@ func (f *FTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 	if job.GetType() == misc.IncrFiles {
 		return f.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
 	} else {
-		return f.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
+		return f.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
 	}
 }
 

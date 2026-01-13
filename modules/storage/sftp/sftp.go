@@ -207,7 +207,7 @@ func (s *SFTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job
 	if job.GetType() == misc.IncrFiles {
 		return s.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
 	} else {
-		return s.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
+		return s.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
 	}
 }
 

@@ -26,7 +26,7 @@ func Perform(logCh chan logger.LogRecord, job interfaces.Job) error {
 		return nil
 	}
 
-	if !job.IsBackupSafety() {
+	if !job.IsSafeRotation() {
 		if err := job.DeleteOldBackups(logCh, ""); err != nil {
 			errs = append(errs, err)
 		}
@@ -65,7 +65,7 @@ func Perform(logCh chan logger.LogRecord, job interfaces.Job) error {
 	// cleanup tmp dir
 	_ = os.Remove(tmpDirPath)
 
-	if job.IsBackupSafety() {
+	if job.IsSafeRotation() {
 		if err := job.DeleteOldBackups(logCh, ""); err != nil {
 			errs = append(errs, err)
 		}

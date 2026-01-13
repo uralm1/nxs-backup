@@ -19,7 +19,7 @@ import (
 type job struct {
 	needToMakeBackup bool
 	gzip             bool
-	safetyBackup     bool
+	safeRotation     bool
 	skipBackupRotate bool // deprecated
 	diskRateLimit    int64
 	name             string
@@ -34,7 +34,7 @@ type job struct {
 type JobParams struct {
 	NeedToMakeBackup bool
 	Gzip             bool
-	SafetyBackup     bool
+	SafeRotation     bool
 	SkipBackupRotate bool // deprecated
 	DiskRateLimit    int64
 	Name             string
@@ -54,7 +54,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 		envs:             jp.Envs,
 		needToMakeBackup: jp.NeedToMakeBackup,
 		gzip:             jp.Gzip,
-		safetyBackup:     jp.SafetyBackup,
+		safeRotation:     jp.SafeRotation,
 		skipBackupRotate: jp.SkipBackupRotate,
 		diskRateLimit:    jp.DiskRateLimit,
 		storages:         jp.Storages,
@@ -123,8 +123,8 @@ func (j *job) SetDumpObjectDelivered(ofs string) {
 	j.dumpedObjects[ofs] = dumpObj
 }
 
-func (j *job) IsBackupSafety() bool {
-	return j.safetyBackup
+func (j *job) IsSafeRotation() bool {
+	return j.safeRotation
 }
 
 func (j *job) NeedToMakeBackup() bool {

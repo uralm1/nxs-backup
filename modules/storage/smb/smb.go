@@ -171,14 +171,14 @@ func (s *SMB) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath string
 
 func (s *SMB) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
 	if !s.rotateEnabled {
-		logCh <- logger.Log(job.GetName(), s.name).Debugf("Backup rotate skipped by config.")
+		logCh <- logger.Log(job.GetName(), s.name).Debugf("Backup rotation skipped (disabled in config).")
 		return nil
 	}
 
 	if job.GetType() == misc.IncrFiles {
 		return s.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
 	} else {
-		return s.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
+		return s.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
 	}
 }
 

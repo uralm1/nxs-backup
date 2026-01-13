@@ -16,7 +16,7 @@ type Job interface {
 	GetStoragesCount() int
 	GetDumpObjects() map[string]DumpObject
 	SetDumpObjectDelivered(ofs string)
-	IsBackupSafety() bool
+	IsSafeRotation() bool
 	ListBackups() JobTargets
 	NeedToMakeBackup() bool
 	NeedToUpdateIncMeta() bool

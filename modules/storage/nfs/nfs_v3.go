@@ -160,7 +160,7 @@ func (n *NFS) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 	if job.GetType() == misc.IncrFiles {
 		return n.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
 	} else {
-		return n.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
+		return n.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
 	}
 }
 

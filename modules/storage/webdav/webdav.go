@@ -149,7 +149,7 @@ func (wd *WebDav) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, 
 	if job.GetType() == misc.IncrFiles {
 		return wd.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
 	} else {
-		return wd.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsBackupSafety())
+		return wd.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
 	}
 }
 

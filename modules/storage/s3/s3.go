@@ -234,7 +234,7 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 					return s3Files[i].LastModified.Before(s3Files[j].LastModified)
 				})
 
-				if !job.IsBackupSafety() {
+				if !job.IsSafeRotation() {
 					retentionCount--
 				}
 				if retentionCount <= len(s3Files) {
