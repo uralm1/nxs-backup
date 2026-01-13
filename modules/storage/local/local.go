@@ -42,13 +42,13 @@ func (l *Local) Configure(p Params) {
 
 func (l *Local) IsLocal() int { return 1 }
 
-func (l *Local) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, bakType string) (err error) {
+func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) (err error) {
 	var (
 		bakDstPath, mtdDstPath string
 		links                  map[string]string
 	)
 
-	if bakType == string(misc.IncrFiles) {
+	if backupType == string(misc.IncrFiles) {
 		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, l.backupPath)
 	} else {
 		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, l.backupPath, l.Retention)
@@ -59,7 +59,7 @@ func (l *Local) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFi
 	}
 
 	if mtdDstPath != "" {
-		if err = l.deliveryBackupMetadata(logCh, jobName, tmpBackupFile, mtdDstPath); err != nil {
+		if err = l.deliverBackupMetadata(logCh, jobName, tmpBackupFile, mtdDstPath); err != nil {
 			return
 		}
 	}
@@ -111,7 +111,7 @@ func (l *Local) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFi
 	return
 }
 
-func (l *Local) deliveryBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBackupFile, mtdDstPath string) error {
+func (l *Local) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBackupFile, mtdDstPath string) error {
 	mtdSrcPath := tmpBackupFile + ".inc"
 
 	err := os.MkdirAll(path.Dir(mtdDstPath), os.ModePerm)

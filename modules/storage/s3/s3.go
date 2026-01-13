@@ -90,10 +90,10 @@ func (s *S3) Configure(p Params) {
 
 func (s *S3) IsLocal() int { return 0 }
 
-func (s *S3) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, bakType string) error {
+func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) error {
 	var bakRemPaths, mtdRemPaths []string
 
-	if bakType == string(misc.IncrFiles) {
+	if backupType == string(misc.IncrFiles) {
 		bakRemPaths, mtdRemPaths = GetIncrBackupDstList(tmpBackupFile, ofs, s.backupPath)
 	} else {
 		bakRemPaths = GetDiscBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention)

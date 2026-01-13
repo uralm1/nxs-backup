@@ -95,10 +95,10 @@ func (f *FTP) updateConn() error {
 
 func (f *FTP) IsLocal() int { return 0 }
 
-func (f *FTP) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, bakType string) error {
+func (f *FTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType string) error {
 	var bakRemPaths, mtdRemPaths []string
 
-	if bakType == string(misc.IncrFiles) {
+	if backupType == string(misc.IncrFiles) {
 		bakRemPaths, mtdRemPaths = GetIncrBackupDstList(tmpBackupFile, ofs, f.backupPath)
 	} else {
 		bakRemPaths = GetDiscBackupDstList(tmpBackupFile, ofs, f.backupPath, f.Retention)

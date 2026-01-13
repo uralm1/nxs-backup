@@ -77,7 +77,7 @@ func Init(sName string, params Opts, rl int64) (s *SMB, err error) {
 
 	s.share, err = s.session.Mount(params.Share)
 	if err != nil {
-		return s, fmt.Errorf("Failed to init '%s' SMB storage. Error: %v ", sName, err)
+		return s, fmt.Errorf("Failed to init '%s' SMB storage. Mount error: %v ", sName, err)
 	}
 
 	return
@@ -92,14 +92,14 @@ func (s *SMB) Configure(p Params) {
 
 func (s *SMB) IsLocal() int { return 0 }
 
-func (s *SMB) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, bakType string) (err error) {
+func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) (err error) {
 
 	var (
 		bakDstPath, mtdDstPath string
 		links                  map[string]string
 	)
 
-	if bakType == string(misc.IncrFiles) {
+	if backupType == string(misc.IncrFiles) {
 		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath)
 	} else {
 		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention)

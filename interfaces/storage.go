@@ -23,7 +23,7 @@ type TargetsOnStorages map[string]TargetFiles
 type Storage interface {
 	Clone() Storage
 	Configure(storage.Params)
-	DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupPath, ofs, bakType string) error
+	DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupPath, ofs, backupType string) error
 	DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job Job, full bool) error
 	GetFileReader(string) (io.Reader, error)
 	GetName() string
@@ -70,7 +70,7 @@ func (s Storages) Delivery(logCh chan logger.LogRecord, job Job) error {
 		startTime := time.Now()
 		ok := float64(0)
 		for _, st := range s {
-			if err := st.DeliveryBackup(logCh, job.GetName(), dumpObj.TmpFile, ofs, string(job.GetType())); err != nil {
+			if err := st.DeliverBackup(logCh, job.GetName(), dumpObj.TmpFile, ofs, string(job.GetType())); err != nil {
 				deliveryErrs = append(deliveryErrs, err)
 			}
 		}

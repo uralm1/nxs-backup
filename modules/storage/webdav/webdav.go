@@ -68,14 +68,14 @@ func (wd *WebDav) Configure(p Params) {
 
 func (wd *WebDav) IsLocal() int { return 0 }
 
-func (wd *WebDav) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, bakType string) (err error) {
+func (wd *WebDav) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) (err error) {
 
 	var (
 		bakDstPath, mtdDstPath string
 		links                  map[string]string
 	)
 
-	if bakType == string(misc.IncrFiles) {
+	if backupType == string(misc.IncrFiles) {
 		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, wd.backupPath)
 	} else {
 		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, wd.backupPath, wd.Retention)

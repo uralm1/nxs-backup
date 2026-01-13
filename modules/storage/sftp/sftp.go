@@ -98,13 +98,13 @@ func (s *SFTP) Configure(p Params) {
 
 func (s *SFTP) IsLocal() int { return 0 }
 
-func (s *SFTP) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, bakType string) (err error) {
+func (s *SFTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) (err error) {
 	var (
 		bakDstPath, mtdDstPath string
 		links                  map[string]string
 	)
 
-	if bakType == string(misc.IncrFiles) {
+	if backupType == string(misc.IncrFiles) {
 		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath)
 	} else {
 		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention)
@@ -115,7 +115,7 @@ func (s *SFTP) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 	}
 
 	if mtdDstPath != "" {
-		if err = s.deliveryBackupMetadata(logCh, jobName, tmpBackupFile, mtdDstPath); err != nil {
+		if err = s.deliverBackupMetadata(logCh, jobName, tmpBackupFile, mtdDstPath); err != nil {
 			return
 		}
 	}
@@ -165,7 +165,7 @@ func (s *SFTP) DeliveryBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 	return
 }
 
-func (s *SFTP) deliveryBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBackupFile, mtdDstPath string) error {
+func (s *SFTP) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBackupFile, mtdDstPath string) error {
 	mtdSrcPath := tmpBackupFile + ".inc"
 
 	// Make remote directories
