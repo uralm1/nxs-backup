@@ -35,8 +35,9 @@ type jobsOpts struct {
 }
 
 func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
+	var errs []error
+
 	var (
-		errs []error
 		job  interfaces.Job
 		jobs []interfaces.Job
 	)
@@ -58,20 +59,20 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 		}
 
 		if misc.Contains([]string{"files", "databases", "external"}, j.Name) {
-			errs = append(errs, fmt.Errorf("A job cannot have the name `%s` reserved", j.Name))
+			errs = append(errs, fmt.Errorf("A job name cannot contain reserved word `%s`", j.Name))
 			continue
 		}
 
 		diskRate, err = getRateLimit(o.mainLim.DiskRate)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("%s The job `%s` won't be use limit defined on job level for its storages", err, j.Name))
+			errs = append(errs, fmt.Errorf("%s Job `%s` won't use the limit defined on a job level for its storages", err, j.Name))
 		}
 
 		if j.Limits != nil {
 			if j.Limits.NetRate != nil {
 				nrl, err = getRateLimit(j.Limits.NetRate)
 				if err != nil {
-					errs = append(errs, fmt.Errorf("%s The job `%s` won't be use limit defined on job level for its storages", err, j.Name))
+					errs = append(errs, fmt.Errorf("%s Job `%s` won't use the limit defined on a job level for its storages", err, j.Name))
 				} else {
 					withStorageRate = true
 				}
@@ -79,7 +80,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 			if j.Limits.DiskRate != nil {
 				diskRate, err = getRateLimit(j.Limits.DiskRate)
 				if err != nil {
-					errs = append(errs, fmt.Errorf("%s The job `%s` won't be use limit defined on job level for its storages", err, j.Name))
+					errs = append(errs, fmt.Errorf("%s Job `%s` won't use the limit defined on a job level for its storages", err, j.Name))
 				}
 			}
 		}
@@ -388,7 +389,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 
 		case misc.External:
 			if j.SkipBackupRotate {
-				errs = append(errs, fmt.Errorf("Used deprecated option `skip_backup_rotate` for job \"%s\". Use `storages_options[].enable_rotate` instead. ", j.Name))
+				errs = append(errs, fmt.Errorf("Option `skip_backup_rotate` for job \"%s\" is deprecated. Use `storages_options[].enable_rotate` instead. ", j.Name))
 			}
 			job, err = external.Init(external.JobParams{
 				Name:             j.Name,
@@ -403,7 +404,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 			})
 
 		default:
-			errs = append(errs, fmt.Errorf("Unknown job type \"%s\". Allowd types: %s ", j.Type, strings.Join(misc.AllowedBackupTypesList(), ", ")))
+			errs = append(errs, fmt.Errorf("Unknown job type \"%s\". Allowed types: %s ", j.Type, strings.Join(misc.AllowedBackupTypesList(), ", ")))
 			continue
 		}
 

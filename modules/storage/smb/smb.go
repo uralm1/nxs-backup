@@ -53,11 +53,7 @@ func Init(sName string, params Opts, rl int64) (s *SMB, err error) {
 
 	conn, err := net.DialTimeout(
 		"tcp",
-		fmt.Sprintf(
-			"%s:%d",
-			params.Host,
-			params.Port,
-		),
+		fmt.Sprintf("%s:%d", params.Host, params.Port),
 		params.ConnectionTimeout*time.Second,
 	)
 	if err != nil {
@@ -93,7 +89,6 @@ func (s *SMB) Configure(p Params) {
 func (s *SMB) IsLocal() int { return 0 }
 
 func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) (err error) {
-
 	var (
 		bakDstPath, mtdDstPath string
 		links                  map[string]string
@@ -109,16 +104,39 @@ func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 		return
 	}
 
-	if mtdDstPath != "" {
+	//external backup could take a long time, so implement a redial on next functions
+	connection_err := &smb2.TransportError{}
+
+	if mtdDstPath != "" { //this is actual only for incremental backup
 		if err = s.copy(logCh, jobName, tmpBackupFile+".inc", bakDstPath); err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
-			return
+			//here
+			if errors.As(err, &connection_err) {
+				if err_retr := s.redial_on_timeout(logCh, jobName); err_retr != nil {
+					err = errors.Join(err, err_retr)
+				} else {
+					err = s.copy(logCh, jobName, tmpBackupFile+".inc", bakDstPath) //reset err and retry operation
+				}
+			}
+			if err != nil {
+				logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup (incremental)")
+				return
+			}
 		}
 	}
 
 	if err = s.copy(logCh, jobName, tmpBackupFile, bakDstPath); err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
-		return
+		//and there
+		if errors.As(err, &connection_err) {
+			if err_retr := s.redial_on_timeout(logCh, jobName); err_retr != nil {
+				err = errors.Join(err, err_retr)
+			} else {
+				err = s.copy(logCh, jobName, tmpBackupFile, bakDstPath) //reset err and retry operation
+			}
+		}
+		if err != nil {
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
+			return
+		}
 	}
 
 	for dst, src := range links {
@@ -136,6 +154,13 @@ func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 	}
 
 	return nil
+}
+
+func (s *SMB) redial_on_timeout(logCh chan logger.LogRecord, jobName string) error {
+	//TODO: implement redial here
+	logCh <- logger.Log(jobName, s.name).Errorf("Transport error discovered!!!")
+	//return nil
+	return errors.New("redial_not_implemented_yet")
 }
 
 func (s *SMB) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath string) (err error) {
