@@ -142,7 +142,7 @@ func (f *FTP) copy(logCh chan logger.LogRecord, job, dst, src string) error {
 	}
 	err = f.conn.Stor(dst, srcFile)
 	if err != nil {
-		logCh <- logger.Log(job, f.name).Errorf("Unable to upload file '%s'. Err: %s", dst, err)
+		logCh <- logger.Log(job, f.name).Errorf("Unable to upload file '%s'. Error: %s", dst, err)
 		return err
 	}
 

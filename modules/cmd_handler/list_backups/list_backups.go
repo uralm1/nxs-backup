@@ -109,7 +109,7 @@ func printBackups(bType string, jobs interfaces.Jobs) (err error) {
 					}
 				} else {
 					jobTargetStFiles = append(jobTargetStFiles, treeElement{
-						name: fmt.Sprintf("Failed to get files from storage. Err: `%v`", tFiles.ListErr),
+						name: fmt.Sprintf("Failed to get files from storage. Error: `%v`", tFiles.ListErr),
 					})
 					err = misc.ErrExecution
 				}

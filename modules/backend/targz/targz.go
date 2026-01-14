@@ -20,11 +20,6 @@ const (
 	regexToIgnoreErr = "^tar:.*(Removing leading|socket ignored|file changed as we read it|Удаляется начальный|сокет проигнорирован|файл изменился во время чтения)"
 )
 
-type Error struct {
-	Err    error
-	Stderr string
-}
-
 type TarOpts struct {
 	Src         string
 	Dst         string
@@ -33,6 +28,11 @@ type TarOpts struct {
 	SaveAbsPath bool
 	RateLim     int64
 	Excludes    []string
+}
+
+type Error struct {
+	Err    error
+	Stderr string
 }
 
 func (e Error) Error() string {
