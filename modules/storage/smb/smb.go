@@ -29,6 +29,7 @@ type SMB struct {
 	session       *smb2.Session
 	share         *smb2.Share
 	name          string
+	conn_params   Opts
 	backupPath    string
 	rateLimit     int64
 	rotateEnabled bool
@@ -45,37 +46,44 @@ type Opts struct {
 	ConnectionTimeout time.Duration
 }
 
-func Init(sName string, params Opts, rl int64) (s *SMB, err error) {
-	s = &SMB{
-		name:      sName,
-		rateLimit: rl,
-	}
-
+func (s *SMB) connect_internal() error {
 	conn, err := net.DialTimeout(
 		"tcp",
-		fmt.Sprintf("%s:%d", params.Host, params.Port),
-		params.ConnectionTimeout*time.Second,
+		fmt.Sprintf("%s:%d", s.conn_params.Host, s.conn_params.Port),
+		s.conn_params.ConnectionTimeout*time.Second,
 	)
 	if err != nil {
-		return s, fmt.Errorf("Failed to init '%s' SMB storage. Error: %v ", sName, err)
+		return err
 	}
 
 	s.session, err = (&smb2.Dialer{
 		Initiator: &smb2.NTLMInitiator{
-			User:     params.User,
-			Password: params.Password,
-			Domain:   params.Domain,
+			User:     s.conn_params.User,
+			Password: s.conn_params.Password,
+			Domain:   s.conn_params.Domain,
 		},
 	}).Dial(conn)
 	if err != nil {
-		return s, err
+		return err
 	}
 
-	s.share, err = s.session.Mount(params.Share)
+	s.share, err = s.session.Mount(s.conn_params.Share)
 	if err != nil {
-		return s, fmt.Errorf("Failed to init '%s' SMB storage. Mount error: %v ", sName, err)
+		return fmt.Errorf("mount: %w", err)
+	}
+	return nil
+}
+
+func Init(sName string, params Opts, rl int64) (s *SMB, err error) {
+	s = &SMB{
+		name:        sName,
+		conn_params: params,
+		rateLimit:   rl,
 	}
 
+	if err := s.connect_internal(); err != nil {
+		return s, fmt.Errorf("Failed to init '%s' SMB storage. Error: %v", sName, err)
+	}
 	return
 }
 
@@ -104,39 +112,33 @@ func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 		return
 	}
 
-	//external backup could take a long time, so implement a redial on next functions
-	connection_err := &smb2.TransportError{}
+	//external backup could take a long time, so try to recreate
+	// destination directory to determine a connection timeout
+	// and implement a redial
+	var connection_err *smb2.TransportError
+
+	err = s.share.MkdirAll(path.Dir(bakDstPath), os.ModeDir)
+	//reconnect here
+	if errors.As(err, &connection_err) {
+		s.Close()
+		if err_retr := s.connect_internal(); err_retr != nil {
+			logCh <- logger.Log(jobName, s.name).Errorf("Reconnection failed: '%s'", err_retr)
+			return
+		} else {
+			logCh <- logger.Log(jobName, s.name).Debugf("Reconnection succeeded")
+		}
+	}
 
 	if mtdDstPath != "" { //this is actual only for incremental backup
 		if err = s.copy(logCh, jobName, tmpBackupFile+".inc", bakDstPath); err != nil {
-			//here
-			if errors.As(err, &connection_err) {
-				if err_retr := s.redial_on_timeout(logCh, jobName); err_retr != nil {
-					err = errors.Join(err, err_retr)
-				} else {
-					err = s.copy(logCh, jobName, tmpBackupFile+".inc", bakDstPath) //reset err and retry operation
-				}
-			}
-			if err != nil {
-				logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup (incremental)")
-				return
-			}
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup (incremental)")
+			return
 		}
 	}
 
 	if err = s.copy(logCh, jobName, tmpBackupFile, bakDstPath); err != nil {
-		//and there
-		if errors.As(err, &connection_err) {
-			if err_retr := s.redial_on_timeout(logCh, jobName); err_retr != nil {
-				err = errors.Join(err, err_retr)
-			} else {
-				err = s.copy(logCh, jobName, tmpBackupFile, bakDstPath) //reset err and retry operation
-			}
-		}
-		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
-			return
-		}
+		logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
+		return
 	}
 
 	for dst, src := range links {
@@ -144,23 +146,16 @@ func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 		err = s.share.MkdirAll(remDir, os.ModeDir)
 		if err != nil {
 			logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
-			return err
+			return
 		}
 		err = s.share.Symlink(src, dst)
 		if err != nil {
 			logCh <- logger.Log(jobName, s.name).Errorf("Unable to make symlink: %s", err)
-			return err
+			return
 		}
 	}
 
 	return nil
-}
-
-func (s *SMB) redial_on_timeout(logCh chan logger.LogRecord, jobName string) error {
-	//TODO: implement redial here
-	logCh <- logger.Log(jobName, s.name).Errorf("Transport error discovered!!!")
-	//return nil
-	return errors.New("redial_not_implemented_yet")
 }
 
 func (s *SMB) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath string) (err error) {
