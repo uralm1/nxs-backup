@@ -43,7 +43,7 @@ func (l *Local) Configure(p Params) {
 func (l *Local) IsLocal() int { return 1 }
 
 func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
-	bakDstPath, metadataDstPath, links, err :=
+	backupDstPath, metadataDstPath, links, err :=
 		GetBackupDstAndLinks(tmpBackupFile, ofs, l.backupPath, l.Retention, backupType)
 	if err != nil {
 		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to get destination path and links: '%s'", err)
@@ -56,16 +56,16 @@ func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 		}
 	}
 
-	err = os.MkdirAll(path.Dir(bakDstPath), os.ModePerm)
+	err = os.MkdirAll(path.Dir(backupDstPath), os.ModePerm)
 	if err != nil {
 		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to create directory: '%s'", err)
 		return err
 	}
 
-	if err = os.Rename(tmpBackupFile, bakDstPath); err != nil {
+	if err = os.Rename(tmpBackupFile, backupDstPath); err != nil {
 		logCh <- logger.Log(jobName, l.GetName()).Debugf("Unable to move temp backup: %s", err)
 		err = nil
-		bakDst, err := os.Create(bakDstPath)
+		bakDst, err := os.Create(backupDstPath)
 		if err != nil {
 			return err
 		}
@@ -82,9 +82,9 @@ func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 			logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to make copy: %s", err)
 			return err
 		}
-		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully copied temp backup to %s", bakDstPath)
+		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully copied temp backup to %s", backupDstPath)
 	} else {
-		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully moved temp backup to %s", bakDstPath)
+		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully moved temp backup to %s", backupDstPath)
 	}
 
 	for dst, src := range links {

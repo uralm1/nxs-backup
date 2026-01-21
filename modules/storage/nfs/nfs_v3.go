@@ -83,7 +83,7 @@ func (n *NFS) Configure(p Params) {
 func (n *NFS) IsLocal() int { return 0 }
 
 func (n *NFS) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) error {
-	bakRemPaths, metadataRemPaths :=
+	backupRemPaths, metadataRemPaths :=
 		GetBackupDstList(tmpBackupFile, ofs, n.backupPath, n.Retention, backupType)
 
 	if len(metadataRemPaths) > 0 { //this is actual only for incremental backup
@@ -94,7 +94,7 @@ func (n *NFS) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 		}
 	}
 
-	for _, dstPath := range bakRemPaths {
+	for _, dstPath := range backupRemPaths {
 		if err := n.copy(logCh, jobName, dstPath, tmpBackupFile); err != nil {
 			return err
 		}

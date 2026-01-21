@@ -91,23 +91,25 @@ func (s *S3) Configure(p Params) {
 func (s *S3) IsLocal() int { return 0 }
 
 func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) error {
-	bakRemPaths, metadataRemPaths :=
+	backupRemPaths, metadataRemPaths :=
 		GetBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
 
 	if len(metadataRemPaths) > 0 { //this is actual only for incremental backup
-		mtdSrc, err := files.GetLimitedFileReader(tmpBackupFile+".inc", s.rateLimit)
+		metadataSrc, err := files.GetLimitedFileReader(tmpBackupFile+".inc", s.rateLimit)
 		if err != nil {
 			return err
 		}
-		defer func() { _ = mtdSrc.Close() }()
+		defer func() { _ = metadataSrc.Close() }()
 
-		mtdSrcStat, err := os.Stat(tmpBackupFile + ".inc")
+		metadataSrcStat, err := os.Stat(tmpBackupFile + ".inc")
 		if err != nil {
 			return err
 		}
 
 		for _, bucketPath := range metadataRemPaths {
-			_, err = s.client.PutObject(context.Background(), s.bucketName, bucketPath, mtdSrc, mtdSrcStat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
+			_, err = s.client.PutObject(context.Background(), s.bucketName, bucketPath,
+				metadataSrc, metadataSrcStat.Size(),
+				minio.PutObjectOptions{ContentType: "application/octet-stream"})
 			if err != nil {
 				return err
 			}
@@ -126,7 +128,7 @@ func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, 
 		return err
 	}
 
-	for _, bucketPath := range bakRemPaths {
+	for _, bucketPath := range backupRemPaths {
 		if _, err = source.Seek(0, io.SeekStart); err != nil {
 			logCh <- logger.Log(jobName, s.name).Errorf("Failed to reset file reader to start. Error: %v", err)
 			return err

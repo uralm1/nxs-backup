@@ -97,7 +97,7 @@ func (s *SMB) Configure(p Params) {
 func (s *SMB) IsLocal() int { return 0 }
 
 func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
-	bakDstPath, metadataDstPath, links, err :=
+	backupDstPath, metadataDstPath, links, err :=
 		GetBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
 	if err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to get destination path and links: '%s'", err)
@@ -109,7 +109,7 @@ func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 	// and implement a redial
 	var connection_err *smb2.TransportError
 
-	err = s.share.MkdirAll(path.Dir(bakDstPath), os.ModeDir)
+	err = s.share.MkdirAll(path.Dir(backupDstPath), os.ModeDir)
 	//reconnect here
 	if errors.As(err, &connection_err) {
 		s.Close()
@@ -122,13 +122,13 @@ func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 	}
 
 	if metadataDstPath != "" { //this is actual only for incremental backup
-		if err = s.copy(logCh, jobName, tmpBackupFile+".inc", bakDstPath); err != nil {
+		if err = s.copy(logCh, jobName, tmpBackupFile+".inc", backupDstPath); err != nil {
 			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup (incremental)")
 			return
 		}
 	}
 
-	if err = s.copy(logCh, jobName, tmpBackupFile, bakDstPath); err != nil {
+	if err = s.copy(logCh, jobName, tmpBackupFile, backupDstPath); err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
 		return
 	}

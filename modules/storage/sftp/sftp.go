@@ -99,7 +99,7 @@ func (s *SFTP) Configure(p Params) {
 func (s *SFTP) IsLocal() int { return 0 }
 
 func (s *SFTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
-	bakDstPath, metadataDstPath, links, err :=
+	backupDstPath, metadataDstPath, links, err :=
 		GetBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
 	if err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to get destination path and links: '%s'", err)
@@ -113,13 +113,13 @@ func (s *SFTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile
 	}
 
 	// Make remote directories
-	rmDir := path.Dir(bakDstPath)
+	rmDir := path.Dir(backupDstPath)
 	if err = s.client.MkdirAll(rmDir); err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", rmDir, err)
 		return err
 	}
 
-	dstFile, err := s.client.Create(bakDstPath)
+	dstFile, err := s.client.Create(backupDstPath)
 	if err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote file: %s", err)
 		return err
