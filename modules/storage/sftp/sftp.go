@@ -98,24 +98,16 @@ func (s *SFTP) Configure(p Params) {
 
 func (s *SFTP) IsLocal() int { return 0 }
 
-func (s *SFTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) (err error) {
-	var (
-		bakDstPath, mtdDstPath string
-		links                  map[string]string
-	)
-
-	if backupType == string(misc.IncrFiles) {
-		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath)
-	} else {
-		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention)
-	}
+func (s *SFTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
+	bakDstPath, metadataDstPath, links, err :=
+		GetBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
 	if err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to get destination path and links: '%s'", err)
 		return
 	}
 
-	if mtdDstPath != "" {
-		if err = s.deliverBackupMetadata(logCh, jobName, tmpBackupFile, mtdDstPath); err != nil {
+	if metadataDstPath != "" { //this is actual only for incremental backup
+		if err = s.deliverBackupMetadata(logCh, jobName, tmpBackupFile, metadataDstPath); err != nil {
 			return
 		}
 	}
@@ -165,35 +157,35 @@ func (s *SFTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile
 	return
 }
 
-func (s *SFTP) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBackupFile, mtdDstPath string) error {
-	mtdSrcPath := tmpBackupFile + ".inc"
+func (s *SFTP) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBackupFile, metadataDstPath string) error {
+	metadataSrcPath := tmpBackupFile + ".inc"
 
 	// Make remote directories
-	rmDir := path.Dir(mtdDstPath)
+	rmDir := path.Dir(metadataDstPath)
 	if err := s.client.MkdirAll(rmDir); err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", rmDir, err)
 		return err
 	}
 
-	_ = s.client.Remove(mtdDstPath)
-	mtdDst, err := s.client.Create(mtdDstPath)
+	_ = s.client.Remove(metadataDstPath)
+	metadataDst, err := s.client.Create(metadataDstPath)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = mtdDst.Close() }()
+	defer func() { _ = metadataDst.Close() }()
 
-	mtdSrc, err := files.GetLimitedFileReader(mtdSrcPath, s.rateLimit)
+	metadataSrc, err := files.GetLimitedFileReader(metadataSrcPath, s.rateLimit)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = mtdSrc.Close() }()
+	defer func() { _ = metadataSrc.Close() }()
 
-	_, err = io.Copy(mtdDst, mtdSrc)
+	_, err = io.Copy(metadataDst, metadataSrc)
 	if err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to make copy: %s", err)
 		return err
 	}
-	logCh <- logger.Log(jobName, s.name).Infof("Successfully copied metadata to %s", mtdDstPath)
+	logCh <- logger.Log(jobName, s.name).Infof("Successfully copied metadata to %s", metadataDstPath)
 
 	return nil
 }

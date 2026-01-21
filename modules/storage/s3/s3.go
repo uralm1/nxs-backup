@@ -90,16 +90,11 @@ func (s *S3) Configure(p Params) {
 
 func (s *S3) IsLocal() int { return 0 }
 
-func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) error {
-	var bakRemPaths, mtdRemPaths []string
+func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) error {
+	bakRemPaths, metadataRemPaths :=
+		GetBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
 
-	if backupType == string(misc.IncrFiles) {
-		bakRemPaths, mtdRemPaths = GetIncrBackupDstList(tmpBackupFile, ofs, s.backupPath)
-	} else {
-		bakRemPaths = GetDiscBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention)
-	}
-
-	if len(mtdRemPaths) > 0 {
+	if len(metadataRemPaths) > 0 { //this is actual only for incremental backup
 		mtdSrc, err := files.GetLimitedFileReader(tmpBackupFile+".inc", s.rateLimit)
 		if err != nil {
 			return err
@@ -111,7 +106,7 @@ func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, 
 			return err
 		}
 
-		for _, bucketPath := range mtdRemPaths {
+		for _, bucketPath := range metadataRemPaths {
 			_, err = s.client.PutObject(context.Background(), s.bucketName, bucketPath, mtdSrc, mtdSrcStat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
 			if err != nil {
 				return err

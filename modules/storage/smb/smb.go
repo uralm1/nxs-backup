@@ -96,17 +96,9 @@ func (s *SMB) Configure(p Params) {
 
 func (s *SMB) IsLocal() int { return 0 }
 
-func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) (err error) {
-	var (
-		bakDstPath, mtdDstPath string
-		links                  map[string]string
-	)
-
-	if backupType == string(misc.IncrFiles) {
-		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath)
-	} else {
-		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention)
-	}
+func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
+	bakDstPath, metadataDstPath, links, err :=
+		GetBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
 	if err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to get destination path and links: '%s'", err)
 		return
@@ -129,7 +121,7 @@ func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 		}
 	}
 
-	if mtdDstPath != "" { //this is actual only for incremental backup
+	if metadataDstPath != "" { //this is actual only for incremental backup
 		if err = s.copy(logCh, jobName, tmpBackupFile+".inc", bakDstPath); err != nil {
 			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup (incremental)")
 			return
@@ -184,14 +176,14 @@ func (s *SMB) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath string
 	if err != nil {
 		logCh <- logger.Log(jobName, s.name).Errorf("Unable to make copy: %s", err)
 	} else {
-		logCh <- logger.Log(jobName, s.name).Infof("File %s successfully uploaded", dstPath)
+		logCh <- logger.Log(jobName, s.name).Infof("File %s was successfully uploaded", dstPath)
 	}
 	return
 }
 
 func (s *SMB) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
 	if !s.rotateEnabled {
-		logCh <- logger.Log(job.GetName(), s.name).Debugf("Backup rotation skipped (disabled in config).")
+		logCh <- logger.Log(job.GetName(), s.name).Debugf("Backup rotation was skipped (disabled in config).")
 		return nil
 	}
 

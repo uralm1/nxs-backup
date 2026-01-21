@@ -78,7 +78,6 @@ func GetOfsPart(regex, target string) string {
 }
 
 func GetDateTimeNow(unit string) (res string) {
-
 	currentTime := time.Now()
 
 	switch unit {
@@ -114,7 +113,6 @@ func GetDecadeDaySubdir() (decadeDay string) {
 }
 
 func GetFileFullPath(dirPath, baseName, baseExtension, prefix string, gZip bool) (fullPath string) {
-
 	fileName := fmt.Sprintf("%s_%s.%s", baseName, GetDateTimeNow(""), baseExtension)
 
 	if prefix != "" {
@@ -155,7 +153,6 @@ func RandString(strLen int64) string {
 
 // GetMessage generates notification message from event log record
 func GetMessage(n logger.LogRecord, project, server string) (m string) {
-
 	switch n.Level {
 	case logrus.DebugLevel:
 		m += "[DEBUG]\n\n"

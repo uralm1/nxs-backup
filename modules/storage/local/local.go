@@ -42,24 +42,16 @@ func (l *Local) Configure(p Params) {
 
 func (l *Local) IsLocal() int { return 1 }
 
-func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) (err error) {
-	var (
-		bakDstPath, mtdDstPath string
-		links                  map[string]string
-	)
-
-	if backupType == string(misc.IncrFiles) {
-		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, l.backupPath)
-	} else {
-		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, l.backupPath, l.Retention)
-	}
+func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
+	bakDstPath, metadataDstPath, links, err :=
+		GetBackupDstAndLinks(tmpBackupFile, ofs, l.backupPath, l.Retention, backupType)
 	if err != nil {
 		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to get destination path and links: '%s'", err)
 		return
 	}
 
-	if mtdDstPath != "" {
-		if err = l.deliverBackupMetadata(logCh, jobName, tmpBackupFile, mtdDstPath); err != nil {
+	if metadataDstPath != "" { //this is actual only for incremental backup
+		if err = l.deliverBackupMetadata(logCh, jobName, tmpBackupFile, metadataDstPath); err != nil {
 			return
 		}
 	}
@@ -111,40 +103,40 @@ func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 	return
 }
 
-func (l *Local) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBackupFile, mtdDstPath string) error {
-	mtdSrcPath := tmpBackupFile + ".inc"
+func (l *Local) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBackupFile, metadataDstPath string) error {
+	metadataSrcPath := tmpBackupFile + ".inc"
 
-	err := os.MkdirAll(path.Dir(mtdDstPath), os.ModePerm)
+	err := os.MkdirAll(path.Dir(metadataDstPath), os.ModePerm)
 	if err != nil {
 		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to create directory: '%s'", err)
 		return err
 	}
 
-	_ = os.Remove(mtdDstPath)
+	_ = os.Remove(metadataDstPath)
 
-	if err = os.Rename(mtdSrcPath, mtdDstPath); err != nil {
+	if err = os.Rename(metadataSrcPath, metadataDstPath); err != nil {
 		logCh <- logger.Log(jobName, l.GetName()).Debugf("Unable to move temp backup: %s", err)
 
-		mtdDst, err := os.Create(mtdDstPath)
+		metadataDst, err := os.Create(metadataDstPath)
 		if err != nil {
 			return err
 		}
-		defer func() { _ = mtdDst.Close() }()
+		defer func() { _ = metadataDst.Close() }()
 
-		mtdSrc, err := files.GetLimitedFileReader(mtdSrcPath, l.rateLimit)
+		metadataSrc, err := files.GetLimitedFileReader(metadataSrcPath, l.rateLimit)
 		if err != nil {
 			return err
 		}
-		defer func() { _ = mtdSrc.Close() }()
+		defer func() { _ = metadataSrc.Close() }()
 
-		_, err = io.Copy(mtdDst, mtdSrc)
+		_, err = io.Copy(metadataDst, metadataSrc)
 		if err != nil {
 			logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to make copy: %s", err)
 			return err
 		}
-		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully copied metadata to %s", mtdDstPath)
+		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully copied metadata to %s", metadataDstPath)
 	} else {
-		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully moved metadata to %s", mtdDstPath)
+		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully moved metadata to %s", metadataDstPath)
 	}
 	return nil
 }

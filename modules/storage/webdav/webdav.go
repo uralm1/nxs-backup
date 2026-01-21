@@ -68,24 +68,15 @@ func (wd *WebDav) Configure(p Params) {
 
 func (wd *WebDav) IsLocal() int { return 0 }
 
-func (wd *WebDav) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs, backupType string) (err error) {
-
-	var (
-		bakDstPath, mtdDstPath string
-		links                  map[string]string
-	)
-
-	if backupType == string(misc.IncrFiles) {
-		bakDstPath, mtdDstPath, links, err = GetIncrBackupDstAndLinks(tmpBackupFile, ofs, wd.backupPath)
-	} else {
-		bakDstPath, links, err = GetDiscBackupDstAndLinks(tmpBackupFile, ofs, wd.backupPath, wd.Retention)
-	}
+func (wd *WebDav) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
+	bakDstPath, metadataDstPath, links, err :=
+		GetBackupDstAndLinks(tmpBackupFile, ofs, wd.backupPath, wd.Retention, backupType)
 	if err != nil {
 		logCh <- logger.Log(jobName, wd.name).Errorf("Unable to get destination path and links: '%s'", err)
 		return
 	}
 
-	if mtdDstPath != "" {
+	if metadataDstPath != "" { //this is actual only for incremental backup
 		if err = wd.copy(logCh, jobName, tmpBackupFile+".inc", bakDstPath); err != nil {
 			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload tmp backup")
 			return
