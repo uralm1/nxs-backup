@@ -171,7 +171,7 @@ func (gc *generateConfig) Run() {
 		job.StoragesOptions = genStorageOpts(gc.storages, false)
 		job.Sources = []sourceYaml{
 			{
-				Name: "desc_files",
+				Name: "files",
 				Gzip: true,
 				Targets: []string{
 					"/var/www/html/www.site.io",
@@ -189,7 +189,7 @@ func (gc *generateConfig) Run() {
 		job.StoragesOptions = genStorageOpts(gc.storages, true)
 		job.Sources = []sourceYaml{
 			{
-				Name: "inc_files",
+				Name: "incremental_files",
 				Gzip: true,
 				Targets: []string{
 					"/var/www/html/www.site.io",

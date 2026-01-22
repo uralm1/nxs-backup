@@ -69,13 +69,13 @@ configMaps:
             password: my_ftp_pass
             port: 21
         jobs:
-        - job_name: PROJECT-desc_files
-          type: desc_files
+        - job_name: PROJECT-disc_files
+          type: files
           tmp_dir: /var/nxs-backup/dump_tmp
           safe_rotation: false
           deferred_copying: false
           sources:
-          - name: desc_files
+          - name: disc_files
             targets:
             - /var/www/html/www.site.io
             - /some/path/for/backup
@@ -92,13 +92,13 @@ configMaps:
               days: 7
               weeks: 5
               months: 5
-        - job_name: PROJECT-inc_files
-          type: inc_files
+        - job_name: PROJECT-incr_files
+          type: incr_files
           tmp_dir: /var/nxs-backup/dump_tmp
           safe_rotation: false
           deferred_copying: false
           sources:
-          - name: inc_files
+          - name: incr_files
             targets:
             - /var/www/html/www.site.io
             - /some/path/for/backup

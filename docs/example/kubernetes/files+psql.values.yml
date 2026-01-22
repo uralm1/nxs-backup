@@ -66,7 +66,7 @@ configMaps:
             region: us-central-1
       files-desc: |
         job_name: "files backup desc"
-        type: desc_files
+        type: files
         tmp_dir: /var/nxs-backup/tmp_dump
         sources:
           - name: data
@@ -91,8 +91,8 @@ configMaps:
               weeks: 0
               months: 12
       files-inc: |
-        job_name: "files backup inc"
-        type: inc_files
+        job_name: "files backup incr"
+        type: incr_files
         tmp_dir: /var/nxs-backup/tmp_dump
         sources:
           - name: upload
@@ -105,13 +105,13 @@ configMaps:
             gzip: true
         storages_options:
           - storage_name: local
-            backup_path: /var/nxs-backup/files/inc
+            backup_path: /var/nxs-backup/files/incr
             retention:
               days: 3
               weeks: 0
               months: 0
           - storage_name: aws_s3
-            backup_path: nxs-backup/files/inc
+            backup_path: nxs-backup/files/incr
             retention:
               days: 30
               weeks: 0

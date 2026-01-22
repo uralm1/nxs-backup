@@ -223,11 +223,11 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 		for _, file := range nfsFiles {
 			err = n.target.Remove(path.Join(bakDir, file.Name()))
 			if err != nil {
-				logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete file '%s' in remote directory '%s' with error: %s",
+				logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' in directory '%s' with error: %s",
 					file.Name(), bakDir, err)
 				errs = append(errs, err)
 			} else {
-				logCh <- logger.Log(jobName, n.name).Infof("Deleted old backup file '%s' in remote directory '%s'", file.Name(), bakDir)
+				logCh <- logger.Log(jobName, n.name).Infof("Deleted old backup '%s' in directory '%s'", file.Name(), bakDir)
 			}
 		}
 	}
@@ -274,7 +274,7 @@ func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 				dirMonth, _ := strconv.Atoi(dirParts[1])
 				if dirMonth < lastMonth {
 					if err = n.target.RemoveAll(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
+						logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' in directory '%s' with error: %s",
 							dir.Name(), backupDir, err)
 						errs = append(errs, err)
 					} else {

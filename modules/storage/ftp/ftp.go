@@ -285,7 +285,7 @@ func (f *FTP) deleteIncrBackup(logCh chan logger.LogRecord, job, ofsPart string,
 				dirMonth, _ := strconv.Atoi(dirParts[1])
 				if dirMonth < lastMonth {
 					if err = f.conn.RemoveDirRecur(path.Join(backupDir, dir.Name)); err != nil {
-						logCh <- logger.Log(job, f.name).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
+						logCh <- logger.Log(job, f.name).Errorf("Failed to delete '%s' in directory '%s' with error: %s",
 							dir.Name, backupDir, err)
 						errs = append(errs, err)
 					} else {
