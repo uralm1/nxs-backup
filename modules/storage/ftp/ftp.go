@@ -101,14 +101,14 @@ func (f *FTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 
 	if len(metadataRemPaths) > 0 { //this is actual only for incremental backup
 		for _, dstPath := range metadataRemPaths {
-			if err := f.copy(logCh, jobName, dstPath, tmpBackupFile+".inc"); err != nil {
+			if err := f.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
 				return err
 			}
 		}
 	}
 
 	for _, dstPath := range backupRemPaths {
-		if err := f.copy(logCh, jobName, dstPath, tmpBackupFile); err != nil {
+		if err := f.copy(logCh, jobName, tmpBackupFile, dstPath); err != nil {
 			return err
 		}
 	}
@@ -116,7 +116,7 @@ func (f *FTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 	return nil
 }
 
-func (f *FTP) copy(logCh chan logger.LogRecord, job, dst, src string) error {
+func (f *FTP) copy(logCh chan logger.LogRecord, job, src, dst string) error {
 
 	// Make remote directories
 	dstDir := path.Dir(dst)
@@ -147,7 +147,7 @@ func (f *FTP) copy(logCh chan logger.LogRecord, job, dst, src string) error {
 
 func (f *FTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
 	if !f.rotateEnabled {
-		logCh <- logger.Log(job.GetName(), f.name).Debugf("Backup rotate skipped (disabled in config).")
+		logCh <- logger.Log(job.GetName(), f.name).Debugf("Backup rotate was skipped (disabled in config).")
 		return nil
 	}
 
@@ -171,49 +171,50 @@ func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string,
 			continue
 		}
 
-		bakDir := path.Join(f.backupPath, ofsPart, p.String())
+		backupDir := path.Join(f.backupPath, ofsPart, p.String())
 		if err := f.updateConn(); err != nil {
 			return err
 		}
-		fptFiles, err := f.conn.List(bakDir)
+		ftpFiles, err := f.conn.List(backupDir)
 		if err != nil {
 			var protoErr *textproto.Error
 			errors.As(err, &protoErr)
 			if protoErr.Code == 550 {
 				continue
 			}
-			logCh <- logger.Log(job, f.name).Errorf("Failed to read files in remote directory '%s' with error: %s", bakDir, err)
+			logCh <- logger.Log(job, f.name).Errorf("Failed to read files in remote directory '%s' with error: %s", backupDir, err)
 			return err
 		}
 
 		if f.Retention.UseCount {
-			sort.Slice(fptFiles, func(i, j int) bool {
-				return fptFiles[i].Time.Before(fptFiles[j].Time)
+			sort.Slice(ftpFiles, func(i, j int) bool {
+				return ftpFiles[i].Time.Before(ftpFiles[j].Time)
 			})
+
 			if !safe_rotation {
 				retentionCount--
 			}
-			if retentionCount <= len(fptFiles) {
-				fptFiles = fptFiles[:len(fptFiles)-retentionCount]
+			if retentionCount <= len(ftpFiles) {
+				ftpFiles = ftpFiles[:len(ftpFiles)-retentionCount]
 			} else {
-				fptFiles = fptFiles[:0]
+				ftpFiles = ftpFiles[:0]
 			}
 		} else {
 			i := 0
-			for _, file := range fptFiles {
+			for _, file := range ftpFiles {
 				if file.Time.Location() != retentionDate.Location() {
 					retentionDate = retentionDate.In(file.Time.Location())
 				}
 
 				if file.Time.Before(retentionDate) {
-					fptFiles[i] = file
+					ftpFiles[i] = file
 					i++
 				}
 			}
-			fptFiles = fptFiles[:i]
+			ftpFiles = ftpFiles[:i]
 		}
 
-		for _, file := range fptFiles {
+		for _, file := range ftpFiles {
 			if file.Name == ".." || file.Name == "." {
 				continue
 			}
@@ -221,13 +222,13 @@ func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string,
 			if err = f.updateConn(); err != nil {
 				return err
 			}
-			err = f.conn.Delete(path.Join(bakDir, file.Name))
+			err = f.conn.Delete(path.Join(backupDir, file.Name))
 			if err != nil {
 				logCh <- logger.Log(job, f.name).Errorf("Failed to delete file '%s' in remote directory '%s' with error: %s",
-					file.Name, bakDir, err)
+					file.Name, backupDir, err)
 				errs = append(errs, err)
 			} else {
-				logCh <- logger.Log(job, f.name).Infof("Deleted old backup file '%s' in remote directory '%s'", file.Name, bakDir)
+				logCh <- logger.Log(job, f.name).Infof("Deleted old backup file '%s' in remote directory '%s'", file.Name, backupDir)
 			}
 		}
 	}

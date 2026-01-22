@@ -91,7 +91,7 @@ func GetBackupDstAndLinks(tmpBackupFile, ofs, backupPath string, retention Reten
 // dst: "/backup/projpart/monthly/tmp.tar" (on 1st of month)
 // links: "/backup/projpart/weekly/tmp.tar" -> "../monthly/tmp.tar" (on 1st of week)
 // "/backup/projpart/daily/tmp.tar" -> "../monthly/tmp.tar"
-// in other days it returns only dst daily path
+// on other days it returns only dst daily path
 func getDBackupDstAndLinks(tmpBackupFile, ofs, backupPath string, retention Retention) (dst string, links map[string]string, err error) {
 
 	var relative string

@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -97,65 +96,22 @@ func (s *SMB) Configure(p Params) {
 func (s *SMB) IsLocal() int { return 0 }
 
 func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
-	backupDstPath, metadataDstPath, links, err :=
-		GetBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
-	if err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to get destination path and links: '%s'", err)
-		return
-	}
+	backupDstPaths, metadataDstPaths :=
+		GetBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
 
-	//external backup could take a long time, so try to recreate
-	// destination directory to determine a connection timeout
-	// and implement a redial
-	var connection_err *smb2.TransportError
-
-	err = s.share.MkdirAll(path.Dir(backupDstPath), os.ModeDir)
-	//reconnect here
-	if errors.As(err, &connection_err) {
-		s.Close()
-		if err_retr := s.connect_internal(); err_retr != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Reconnection failed: '%s'", err_retr)
-			return
-		} else {
-			logCh <- logger.Log(jobName, s.name).Debugf("Reconnection succeeded")
-		}
-	}
-
-	if metadataDstPath != "" { //this is actual only for incremental backup
-		if err = s.copy(logCh, jobName, tmpBackupFile+".inc", backupDstPath); err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup (incremental)")
-			return
-		}
-	}
-
-	if err = s.copy(logCh, jobName, tmpBackupFile, backupDstPath); err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
-		return
-	}
-
-	for dst /*, src*/ := range links {
-		// symlinks are not supported on SMB shares
-		//remDir := path.Dir(dst)
-		//err = s.share.MkdirAll(remDir, os.ModeDir)
-		//if err != nil {
-		//	logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
-		//	return
-		//}
-		//err = s.share.Symlink(src, dst)
-		//if err != nil {
-		//	logCh <- logger.Log(jobName, s.name).Errorf("Unable to make symlink: %s", err)
-		//	return
-		//}
-		if filepath.Ext(dst) == ".inc" {
-			if err = s.copy(logCh, jobName, tmpBackupFile+".inc", dst); err != nil {
+	if len(metadataDstPaths) > 0 { //this is actual only for incremental backup
+		for _, dstPath := range metadataDstPaths {
+			if err = s.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
 				logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup (incremental)")
 				return
 			}
-		} else {
-			if err = s.copy(logCh, jobName, tmpBackupFile, dst); err != nil {
-				logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
-				return
-			}
+		}
+	}
+
+	for _, dstPath := range backupDstPaths {
+		if err = s.copy(logCh, jobName, tmpBackupFile, dstPath); err != nil {
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
+			return
 		}
 	}
 
@@ -165,9 +121,30 @@ func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 func (s *SMB) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath string) (err error) {
 	// Make remote directories
 	remDir := path.Dir(dstPath)
-	if err = s.share.MkdirAll(remDir, os.ModeDir); err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
-		return
+
+	//external backup could take a long time, so try to recreate
+	// destination directory to determine a connection timeout
+	// and implement a redial
+	for attempts := 2; attempts > 0; attempts-- {
+		err = s.share.MkdirAll(remDir, os.ModeDir)
+		//reconnect here
+		var connection_err *smb2.TransportError
+		if errors.As(err, &connection_err) && attempts > 1 {
+			s.Close()
+			if err_retr := s.connect_internal(); err_retr != nil {
+				logCh <- logger.Log(jobName, s.name).Errorf("Reconnection failed: '%s'", err_retr)
+				//err = errors.Join(err, err_retr)
+			} else {
+				logCh <- logger.Log(jobName, s.name).Debugf("Reconnection succeeded")
+				continue
+			}
+		}
+		if err != nil {
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
+			return
+		} else {
+			break
+		}
 	}
 
 	dstFile, err := s.share.Create(dstPath)
@@ -207,13 +184,7 @@ func (s *SMB) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 }
 
 func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safe_rotation bool) error {
-	type fileLinks struct {
-		wLink string
-		dLink string
-	}
 	var errs []error
-	filesMap := make(map[string]*fileLinks, 64)
-	filesToDeleteMap := make(map[string]*fileLinks, 64)
 
 	for _, p := range RetentionPeriodsList {
 		retentionCount, retentionDate := GetRetention(p, s.Retention)
@@ -229,30 +200,6 @@ func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 			}
 			logCh <- logger.Log(jobName, s.name).Errorf("Failed to read files in remote directory '%s' with error: %s", backupDir, err)
 			return err
-		}
-
-		for _, file := range smbFiles {
-			fPath := path.Join(backupDir, file.Name())
-			if file.Mode()&fs.ModeSymlink != 0 {
-				link, err := s.share.Readlink(fPath)
-				if err != nil {
-					logCh <- logger.Log(jobName, s.name).Errorf("Failed to read a symlink for file '%s': %s", file, err)
-					errs = append(errs, err)
-					continue
-				}
-				linkPath := filepath.Join(backupDir, link)
-
-				if fl, ok := filesMap[linkPath]; ok {
-					switch p {
-					case Weekly:
-						fl.wLink = fPath
-					case Daily:
-						fl.dLink = fPath
-					}
-					filesMap[linkPath] = fl
-				}
-			}
-			filesMap[fPath] = &fileLinks{}
 		}
 
 		if s.Retention.UseCount {
@@ -288,60 +235,12 @@ func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 				continue
 			}
 
-			fPath := path.Join(backupDir, file.Name())
-			filesToDeleteMap[fPath] = filesMap[fPath]
-		}
-	}
-
-	for file, fl := range filesToDeleteMap {
-		del_file := true
-		moved := false
-		if fl.wLink != "" {
-			if _, toDel := filesToDeleteMap[fl.wLink]; !toDel {
-				del_file = false
-				if err := s.moveFile(file, fl.wLink); err != nil {
-					logCh <- logger.Log(jobName, s.name).Error(err)
-					errs = append(errs, err)
-				} else {
-					logCh <- logger.Log(jobName, s.name).Debugf("Successfully moved old backup to %s", fl.wLink)
-					moved = true
-				}
-				if _, toDel = filesToDeleteMap[fl.dLink]; !toDel {
-					if err := s.share.Remove(fl.dLink); err != nil {
-						logCh <- logger.Log(jobName, s.name).Error(err)
-						errs = append(errs, err)
-						break
-					}
-					//just don't create symlinks
-					//relative, _ := filepath.Rel(filepath.Dir(fl.dLink), fl.wLink)
-					//if err := s.share.Symlink(relative, fl.dLink); err != nil {
-					//	logCh <- logger.Log(jobName, s.name).Error(err)
-					//	errs = append(errs, err)
-					//} else {
-					//	logCh <- logger.Log(jobName, s.name).Debugf("Successfully changed symlink %s", fl.dLink)
-					//}
-				}
-			}
-		}
-		if fl.dLink != "" && !moved {
-			if _, toDel := filesToDeleteMap[fl.dLink]; !toDel {
-				del_file = false
-				if err := s.moveFile(file, fl.dLink); err != nil {
-					logCh <- logger.Log(jobName, s.name).Error(err)
-					errs = append(errs, err)
-				} else {
-					logCh <- logger.Log(jobName, s.name).Debugf("Successfully moved old backup to %s", fl.dLink)
-				}
-			}
-		}
-
-		if del_file {
-			if err := s.share.Remove(file); err != nil {
-				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with error: %s",
-					file, err)
+			f_path := path.Join(backupDir, file.Name())
+			if err := s.share.Remove(f_path); err != nil {
+				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with error: %s", f_path, err)
 				errs = append(errs, err)
 			} else {
-				logCh <- logger.Log(jobName, s.name).Infof("Deleted old backup file '%s'", file)
+				logCh <- logger.Log(jobName, s.name).Infof("Deleted old backup file '%s'", f_path)
 			}
 		}
 	}
@@ -477,14 +376,4 @@ func (s *SMB) Clone() interfaces.Storage {
 
 func (s *SMB) GetName() string {
 	return s.name
-}
-
-func (s *SMB) moveFile(oldPath, newPath string) error {
-	if err := s.share.Remove(newPath); err != nil {
-		return fmt.Errorf("Failed to delete file '%s' with error: %s ", oldPath, err)
-	}
-	if err := s.share.Rename(oldPath, newPath); err != nil {
-		return fmt.Errorf("Failed to move file '%s' with error: %s ", oldPath, err)
-	}
-	return nil
 }
