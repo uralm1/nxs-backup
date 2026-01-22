@@ -175,7 +175,7 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 				logCh <- logger.Log(jobName, n.name).Debugf("Directory '%s' not exist. Skipping rotate.", bakDir)
 				continue
 			}
-			logCh <- logger.Log(jobName, n.name).Errorf("Failed to read files in remote directory '%s' with next error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, n.name).Errorf("Failed to read files in remote directory '%s' with error: %s", bakDir, err)
 			return err
 		}
 
@@ -186,7 +186,7 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 			}
 			f, _, err := n.target.Lookup(path.Join(bakDir, file.Name()))
 			if err != nil {
-				logCh <- logger.Log(jobName, n.name).Errorf("Failed to read file '%s' with next error: %s", file.Name(), err)
+				logCh <- logger.Log(jobName, n.name).Errorf("Failed to read file '%s' with error: %s", file.Name(), err)
 				return err
 			}
 			nfsFiles = append(nfsFiles, f)
@@ -223,7 +223,7 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 		for _, file := range nfsFiles {
 			err = n.target.Remove(path.Join(bakDir, file.Name()))
 			if err != nil {
-				logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete file '%s' in remote directory '%s' with next error: %s",
+				logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete file '%s' in remote directory '%s' with error: %s",
 					file.Name(), bakDir, err)
 				errs = append(errs, err)
 			} else {
@@ -243,7 +243,7 @@ func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 
 		err := n.target.RemoveAll(backupDir)
 		if err != nil {
-			logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
+			logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
 			errs = append(errs, err)
 		}
 	} else {
@@ -262,7 +262,7 @@ func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 
 		dirs, err := n.target.ReadDirPlus(backupDir)
 		if err != nil {
-			logCh <- logger.Log(jobName, n.name).Errorf("Failed to get access to directory '%s' with next error: %v", backupDir, err)
+			logCh <- logger.Log(jobName, n.name).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
 			return err
 		}
 
@@ -274,7 +274,7 @@ func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 				dirMonth, _ := strconv.Atoi(dirParts[1])
 				if dirMonth < lastMonth {
 					if err = n.target.RemoveAll(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
+						logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
 							dir.Name(), backupDir, err)
 						errs = append(errs, err)
 					} else {

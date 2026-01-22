@@ -177,13 +177,13 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 				logCh <- logger.Log(jobName, l.GetName()).Debugf("Backups directory `%s` not found. Continue.", bakDir)
 				continue
 			}
-			logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to open directory '%s' with next error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to open directory '%s' with error: %s", bakDir, err)
 			return err
 		}
 
 		lFiles, err := dir.ReadDir(-1)
 		if err != nil {
-			logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to read files in directory '%s' with next error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to read files in directory '%s' with error: %s", bakDir, err)
 			return err
 		}
 
@@ -297,7 +297,7 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 
 		if delFile {
 			if err := os.Remove(file); err != nil {
-				logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to delete file '%s' with next error: %s",
+				logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to delete file '%s' with error: %s",
 					file, err)
 				errs = append(errs, err)
 			} else {
@@ -319,7 +319,7 @@ func (l *Local) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 				logCh <- logger.Log(jobName, l.GetName()).Debugf("Directory '%s' not exist. Skipping delete.", backupDir)
 				return nil
 			} else {
-				logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
+				logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
 				errs = append(errs, err)
 			}
 		}
@@ -343,7 +343,7 @@ func (l *Local) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 				logCh <- logger.Log(jobName, l.GetName()).Debugf("Directory '%s' not exist. Skipping rotate.", backupDir)
 				return nil
 			} else {
-				logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to get access to directory '%s' with next error: %v", backupDir, err)
+				logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
 				return err
 			}
 		}
@@ -355,7 +355,7 @@ func (l *Local) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 				dirMonth, _ := strconv.Atoi(dirParts[1])
 				if dirMonth < lastMonth {
 					if err = os.RemoveAll(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
+						logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
 							dirName, backupDir, err)
 						errs = append(errs, err)
 					} else {
@@ -407,10 +407,10 @@ func (l *Local) GetName() string {
 
 func moveFile(oldPath, newPath string) error {
 	if err := os.Remove(newPath); err != nil {
-		return fmt.Errorf("Failed to delete file '%s' with next error: %s ", oldPath, err)
+		return fmt.Errorf("Failed to delete file '%s' with error: %s ", oldPath, err)
 	}
 	if err := os.Rename(oldPath, newPath); err != nil {
-		return fmt.Errorf("Failed to move file '%s' with next error: %s ", oldPath, err)
+		return fmt.Errorf("Failed to move file '%s' with error: %s ", oldPath, err)
 	}
 	return nil
 }

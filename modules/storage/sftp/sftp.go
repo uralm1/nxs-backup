@@ -224,7 +224,7 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
-			logCh <- logger.Log(jobName, s.name).Errorf("Failed to read files in remote directory '%s' with next error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, s.name).Errorf("Failed to read files in remote directory '%s' with error: %s", bakDir, err)
 			return err
 		}
 
@@ -333,7 +333,7 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 
 		if delFile {
 			if err := s.client.Remove(file); err != nil {
-				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with next error: %s",
+				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with error: %s",
 					file, err)
 				errs = append(errs, err)
 			} else {
@@ -355,7 +355,7 @@ func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 				logCh <- logger.Log(jobName, s.name).Debugf("Directory '%s' not exist. Skipping delete.", backupDir)
 				return nil
 			}
-			logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
+			logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
 			errs = append(errs, err)
 		}
 	} else {
@@ -378,7 +378,7 @@ func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 				logCh <- logger.Log(jobName, s.name).Debugf("Directory '%s' not exist. Skipping rotate.", backupDir)
 				return nil
 			}
-			logCh <- logger.Log(jobName, s.name).Errorf("Failed to get access to directory '%s' with next error: %v", backupDir, err)
+			logCh <- logger.Log(jobName, s.name).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
 			return err
 		}
 		rx := regexp.MustCompile(`month_\d\d`)
@@ -389,7 +389,7 @@ func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 				dirMonth, _ := strconv.Atoi(dirParts[1])
 				if dirMonth < lastMonth {
 					if err = s.client.Remove(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
+						logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
 							dirName, backupDir, err)
 						errs = append(errs, err)
 					} else {
@@ -455,10 +455,10 @@ func (s *SFTP) GetName() string {
 
 func (s *SFTP) moveFile(oldPath, newPath string) error {
 	if err := s.client.Remove(newPath); err != nil {
-		return fmt.Errorf("Failed to delete file '%s' with next error: %s ", oldPath, err)
+		return fmt.Errorf("Failed to delete file '%s' with error: %s ", oldPath, err)
 	}
 	if err := s.client.Rename(oldPath, newPath); err != nil {
-		return fmt.Errorf("Failed to move file '%s' with next error: %s ", oldPath, err)
+		return fmt.Errorf("Failed to move file '%s' with error: %s ", oldPath, err)
 	}
 	return nil
 }

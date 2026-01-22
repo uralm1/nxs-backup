@@ -81,19 +81,19 @@ func GetDateTimeNow(unit string) (res string) {
 	currentTime := time.Now()
 
 	switch unit {
-	case "dom":
+	case "dom": //1-31(30)
 		res = strconv.Itoa(currentTime.Day())
-	case "dow":
+	case "dow": //0-6
 		res = strconv.Itoa(int(currentTime.Weekday()))
-	case "doy":
+	case "doy": //1-365(366)
 		res = strconv.Itoa(currentTime.YearDay())
-	case "moy":
+	case "moy": //1-12
 		res = strconv.Itoa(int(currentTime.Month()))
-	case "year":
+	case "year": //2026
 		res = strconv.Itoa(currentTime.Year())
-	case "previous_year":
+	case "previous_year": //2025
 		res = strconv.Itoa(currentTime.Year() - 1)
-	default:
+	default: //2026-01-22_16-41
 		res = currentTime.Format("2006-01-02_15-04")
 	}
 

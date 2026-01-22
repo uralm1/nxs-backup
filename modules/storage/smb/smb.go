@@ -133,17 +133,29 @@ func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 		return
 	}
 
-	for dst, src := range links {
-		remDir := path.Dir(dst)
-		err = s.share.MkdirAll(remDir, os.ModeDir)
-		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
-			return
-		}
-		err = s.share.Symlink(src, dst)
-		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to make symlink: %s", err)
-			return
+	for dst /*, src*/ := range links {
+		// symlinks are not supported on SMB shares
+		//remDir := path.Dir(dst)
+		//err = s.share.MkdirAll(remDir, os.ModeDir)
+		//if err != nil {
+		//	logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
+		//	return
+		//}
+		//err = s.share.Symlink(src, dst)
+		//if err != nil {
+		//	logCh <- logger.Log(jobName, s.name).Errorf("Unable to make symlink: %s", err)
+		//	return
+		//}
+		if filepath.Ext(dst) == ".inc" {
+			if err = s.copy(logCh, jobName, tmpBackupFile+".inc", dst); err != nil {
+				logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup (incremental)")
+				return
+			}
+		} else {
+			if err = s.copy(logCh, jobName, tmpBackupFile, dst); err != nil {
+				logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
+				return
+			}
 		}
 	}
 
@@ -209,27 +221,26 @@ func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 			continue
 		}
 
-		bakDir := path.Join(s.backupPath, ofsPart, p.String())
-		smbFiles, err := s.share.ReadDir(bakDir)
+		backupDir := path.Join(s.backupPath, ofsPart, p.String())
+		smbFiles, err := s.share.ReadDir(backupDir)
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
 			}
-			logCh <- logger.Log(jobName, s.name).Errorf("Failed to read files in remote directory '%s' with next error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, s.name).Errorf("Failed to read files in remote directory '%s' with error: %s", backupDir, err)
 			return err
 		}
 
 		for _, file := range smbFiles {
-			fPath := path.Join(bakDir, file.Name())
+			fPath := path.Join(backupDir, file.Name())
 			if file.Mode()&fs.ModeSymlink != 0 {
 				link, err := s.share.Readlink(fPath)
 				if err != nil {
-					logCh <- logger.Log(jobName, s.name).Errorf("Failed to read a symlink for file '%s': %s",
-						file, err)
+					logCh <- logger.Log(jobName, s.name).Errorf("Failed to read a symlink for file '%s': %s", file, err)
 					errs = append(errs, err)
 					continue
 				}
-				linkPath := filepath.Join(bakDir, link)
+				linkPath := filepath.Join(backupDir, link)
 
 				if fl, ok := filesMap[linkPath]; ok {
 					switch p {
@@ -277,17 +288,17 @@ func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 				continue
 			}
 
-			fPath := path.Join(bakDir, file.Name())
+			fPath := path.Join(backupDir, file.Name())
 			filesToDeleteMap[fPath] = filesMap[fPath]
 		}
 	}
 
 	for file, fl := range filesToDeleteMap {
-		delFile := true
+		del_file := true
 		moved := false
 		if fl.wLink != "" {
 			if _, toDel := filesToDeleteMap[fl.wLink]; !toDel {
-				delFile = false
+				del_file = false
 				if err := s.moveFile(file, fl.wLink); err != nil {
 					logCh <- logger.Log(jobName, s.name).Error(err)
 					errs = append(errs, err)
@@ -301,19 +312,20 @@ func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 						errs = append(errs, err)
 						break
 					}
-					relative, _ := filepath.Rel(filepath.Dir(fl.dLink), fl.wLink)
-					if err := s.share.Symlink(relative, fl.dLink); err != nil {
-						logCh <- logger.Log(jobName, s.name).Error(err)
-						errs = append(errs, err)
-					} else {
-						logCh <- logger.Log(jobName, s.name).Debugf("Successfully changed symlink %s", fl.dLink)
-					}
+					//just don't create symlinks
+					//relative, _ := filepath.Rel(filepath.Dir(fl.dLink), fl.wLink)
+					//if err := s.share.Symlink(relative, fl.dLink); err != nil {
+					//	logCh <- logger.Log(jobName, s.name).Error(err)
+					//	errs = append(errs, err)
+					//} else {
+					//	logCh <- logger.Log(jobName, s.name).Debugf("Successfully changed symlink %s", fl.dLink)
+					//}
 				}
 			}
 		}
 		if fl.dLink != "" && !moved {
 			if _, toDel := filesToDeleteMap[fl.dLink]; !toDel {
-				delFile = false
+				del_file = false
 				if err := s.moveFile(file, fl.dLink); err != nil {
 					logCh <- logger.Log(jobName, s.name).Error(err)
 					errs = append(errs, err)
@@ -323,9 +335,9 @@ func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 			}
 		}
 
-		if delFile {
+		if del_file {
 			if err := s.share.Remove(file); err != nil {
-				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with next error: %s",
+				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with error: %s",
 					file, err)
 				errs = append(errs, err)
 			} else {
@@ -345,7 +357,7 @@ func (s *SMB) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 
 		err := s.share.RemoveAll(backupDir)
 		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
+			logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
 			errs = append(errs, err)
 		}
 	} else {
@@ -364,7 +376,7 @@ func (s *SMB) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 
 		dirs, err := s.share.ReadDir(backupDir)
 		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Failed to get access to directory '%s' with next error: %v", backupDir, err)
+			logCh <- logger.Log(jobName, s.name).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
 			return err
 		}
 		rx := regexp.MustCompile(`month_\d\d`)
@@ -375,7 +387,7 @@ func (s *SMB) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 				dirMonth, _ := strconv.Atoi(dirParts[1])
 				if dirMonth < lastMonth {
 					if err = s.share.RemoveAll(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
+						logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
 							dirName, backupDir, err)
 						errs = append(errs, err)
 					} else {
@@ -469,10 +481,10 @@ func (s *SMB) GetName() string {
 
 func (s *SMB) moveFile(oldPath, newPath string) error {
 	if err := s.share.Remove(newPath); err != nil {
-		return fmt.Errorf("Failed to delete file '%s' with next error: %s ", oldPath, err)
+		return fmt.Errorf("Failed to delete file '%s' with error: %s ", oldPath, err)
 	}
 	if err := s.share.Rename(oldPath, newPath); err != nil {
-		return fmt.Errorf("Failed to move file '%s' with next error: %s ", oldPath, err)
+		return fmt.Errorf("Failed to move file '%s' with error: %s ", oldPath, err)
 	}
 	return nil
 }

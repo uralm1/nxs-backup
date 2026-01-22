@@ -96,7 +96,7 @@ func (f *FTP) updateConn() error {
 func (f *FTP) IsLocal() int { return 0 }
 
 func (f *FTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) error {
-	bakRemPaths, metadataRemPaths :=
+	backupRemPaths, metadataRemPaths :=
 		GetBackupDstList(tmpBackupFile, ofs, f.backupPath, f.Retention, backupType)
 
 	if len(metadataRemPaths) > 0 { //this is actual only for incremental backup
@@ -107,7 +107,7 @@ func (f *FTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 		}
 	}
 
-	for _, dstPath := range bakRemPaths {
+	for _, dstPath := range backupRemPaths {
 		if err := f.copy(logCh, jobName, dstPath, tmpBackupFile); err != nil {
 			return err
 		}
@@ -182,7 +182,7 @@ func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string,
 			if protoErr.Code == 550 {
 				continue
 			}
-			logCh <- logger.Log(job, f.name).Errorf("Failed to read files in remote directory '%s' with next error: %s", bakDir, err)
+			logCh <- logger.Log(job, f.name).Errorf("Failed to read files in remote directory '%s' with error: %s", bakDir, err)
 			return err
 		}
 
@@ -223,7 +223,7 @@ func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string,
 			}
 			err = f.conn.Delete(path.Join(bakDir, file.Name))
 			if err != nil {
-				logCh <- logger.Log(job, f.name).Errorf("Failed to delete file '%s' in remote directory '%s' with next error: %s",
+				logCh <- logger.Log(job, f.name).Errorf("Failed to delete file '%s' in remote directory '%s' with error: %s",
 					file.Name, bakDir, err)
 				errs = append(errs, err)
 			} else {
@@ -249,13 +249,13 @@ func (f *FTP) deleteIncrBackup(logCh chan logger.LogRecord, job, ofsPart string,
 			if protoErr.Code == 550 {
 				return nil
 			} else {
-				logCh <- logger.Log(job, f.name).Errorf("Failed to get access to directory '%s' with next error: %v", backupDir, err)
+				logCh <- logger.Log(job, f.name).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
 				return err
 			}
 		}
 
 		if err := f.conn.RemoveDirRecur(backupDir); err != nil {
-			logCh <- logger.Log(job, f.name).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
+			logCh <- logger.Log(job, f.name).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
 			errs = append(errs, err)
 		}
 	} else {
@@ -274,7 +274,7 @@ func (f *FTP) deleteIncrBackup(logCh chan logger.LogRecord, job, ofsPart string,
 
 		dirs, err := f.conn.List(backupDir)
 		if err != nil {
-			logCh <- logger.Log(job, f.name).Errorf("Failed to get access to directory '%s' with next error: %v", backupDir, err)
+			logCh <- logger.Log(job, f.name).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
 			return err
 		}
 		rx := regexp.MustCompile(`month_\d\d`)
@@ -284,7 +284,7 @@ func (f *FTP) deleteIncrBackup(logCh chan logger.LogRecord, job, ofsPart string,
 				dirMonth, _ := strconv.Atoi(dirParts[1])
 				if dirMonth < lastMonth {
 					if err = f.conn.RemoveDirRecur(path.Join(backupDir, dir.Name)); err != nil {
-						logCh <- logger.Log(job, f.name).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
+						logCh <- logger.Log(job, f.name).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
 							dir.Name, backupDir, err)
 						errs = append(errs, err)
 					} else {

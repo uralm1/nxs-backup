@@ -78,7 +78,7 @@ func (wd *WebDav) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupF
 
 	if metadataDstPath != "" { //this is actual only for incremental backup
 		if err = wd.copy(logCh, jobName, tmpBackupFile+".inc", backupDstPath); err != nil {
-			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload tmp backup")
+			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload tmp backup (incremental)")
 			return
 		}
 	}
@@ -95,6 +95,7 @@ func (wd *WebDav) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupF
 			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
 			return
 		}
+		// FIXME: here is possible bug as we are coping remote to remote
 		err = wd.client.Copy(src, dst)
 		if err != nil {
 			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to make copy: %s", err)
@@ -159,7 +160,7 @@ func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart
 			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
-			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to read files in remote directory '%s' with next error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to read files in remote directory '%s' with error: %s", bakDir, err)
 			return err
 		}
 
@@ -194,7 +195,7 @@ func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart
 		for _, file := range wdFiles {
 			err = wd.client.Rm(path.Join(bakDir, file.Name()))
 			if err != nil {
-				logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete file '%s' in remote directory '%s' with next error: %s",
+				logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete file '%s' in remote directory '%s' with error: %s",
 					file.Name(), bakDir, err)
 				errs = append(errs, err)
 			} else {
@@ -214,7 +215,7 @@ func (wd *WebDav) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart
 
 		err := wd.client.Rm(backupDir)
 		if err != nil {
-			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete '%s' with next error: %s", backupDir, err)
+			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
 			errs = append(errs, err)
 		}
 	} else {
@@ -233,7 +234,7 @@ func (wd *WebDav) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart
 
 		dirs, err := wd.client.Ls(backupDir)
 		if err != nil {
-			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to get access to directory '%s' with next error: %v", backupDir, err)
+			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
 			return err
 		}
 		rx := regexp.MustCompile(`month_\d\d`)
@@ -244,7 +245,7 @@ func (wd *WebDav) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart
 				dirMonth, _ := strconv.Atoi(dirParts[1])
 				if dirMonth < lastMonth {
 					if err = wd.client.Rm(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete '%s' in dir '%s' with next error: %s",
+						logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
 							dirName, backupDir, err)
 						errs = append(errs, err)
 					} else {
