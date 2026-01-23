@@ -69,45 +69,29 @@ func (wd *WebDav) Configure(p Params) {
 func (wd *WebDav) IsLocal() int { return 0 }
 
 func (wd *WebDav) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
-	backupDstPath, metadataDstPath, links, err :=
-		GetBackupDstAndLinks(tmpBackupFile, ofs, wd.backupPath, wd.Retention, backupType)
-	if err != nil {
-		logCh <- logger.Log(jobName, wd.name).Errorf("Unable to get destination path and links: '%s'", err)
-		return
+	backupDstPaths, metadataDstPaths :=
+		GetBackupDstList(tmpBackupFile, ofs, wd.backupPath, wd.Retention, backupType)
+
+	if len(metadataDstPaths) > 0 { //this is actual only for incremental backup
+		for _, dstPath := range metadataDstPaths {
+			if err = wd.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
+				logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload tmp backup (incremental)")
+				return
+			}
+		}
 	}
 
-	if metadataDstPath != "" { //this is actual only for incremental backup
-		if err = wd.copy(logCh, jobName, tmpBackupFile+".inc", backupDstPath); err != nil {
-			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload tmp backup (incremental)")
+	for _, dstPath := range backupDstPaths {
+		if err = wd.copy(logCh, jobName, tmpBackupFile, dstPath); err != nil {
+			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload tmp backup")
 			return
 		}
 	}
 
-	if err = wd.copy(logCh, jobName, tmpBackupFile, backupDstPath); err != nil {
-		logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload tmp backup")
-		return
-	}
-
-	for dst, src := range links {
-		remDir := path.Dir(dst)
-		err = wd.mkDir(path.Dir(dst))
-		if err != nil {
-			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
-			return
-		}
-		// FIXME: here is possible bug as we are coping remote to remote
-		err = wd.client.Copy(src, dst)
-		if err != nil {
-			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to make copy: %s", err)
-			return
-		}
-	}
-
-	return
+	return nil
 }
 
 func (wd *WebDav) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath string) (err error) {
-
 	// Make remote directories
 	remDir := path.Dir(dstPath)
 	if err = wd.mkDir(remDir); err != nil {
@@ -126,7 +110,7 @@ func (wd *WebDav) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath st
 	if err != nil {
 		logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload file: %s", err)
 	} else {
-		logCh <- logger.Log(jobName, wd.name).Infof("File %s successfull uploaded", dstPath)
+		logCh <- logger.Log(jobName, wd.name).Infof("File %s was successfull uploaded", dstPath)
 	}
 
 	return err
@@ -134,7 +118,7 @@ func (wd *WebDav) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath st
 
 func (wd *WebDav) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
 	if !wd.rotateEnabled {
-		logCh <- logger.Log(job.GetName(), wd.name).Debugf("Backup rotate skipped by config.")
+		logCh <- logger.Log(job.GetName(), wd.name).Info("Backup rotation was skipped (disabled in config)")
 		return nil
 	}
 
@@ -154,13 +138,13 @@ func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart
 			continue
 		}
 
-		bakDir := path.Join(wd.backupPath, ofsPart, p.String())
-		wdFiles, err := wd.client.Ls(bakDir)
+		backupDir := path.Join(wd.backupPath, ofsPart, p.String())
+		wdFiles, err := wd.client.Ls(backupDir)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
-			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to read files in remote directory '%s' with error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to read files in remote directory '%s' with error: %s", backupDir, err)
 			return err
 		}
 
@@ -193,13 +177,13 @@ func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart
 		}
 
 		for _, file := range wdFiles {
-			err = wd.client.Rm(path.Join(bakDir, file.Name()))
+			err = wd.client.Rm(path.Join(backupDir, file.Name()))
 			if err != nil {
-				logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete file '%s' in remote directory '%s' with error: %s",
-					file.Name(), bakDir, err)
+				logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete file '%s' in directory '%s' with error: %s",
+					file.Name(), backupDir, err)
 				errs = append(errs, err)
 			} else {
-				logCh <- logger.Log(jobName, wd.name).Infof("Deleted old backup file '%s' in remote directory '%s'", file.Name(), bakDir)
+				logCh <- logger.Log(jobName, wd.name).Infof("Deleted old backup file '%s' in directory '%s'", file.Name(), backupDir)
 			}
 		}
 	}

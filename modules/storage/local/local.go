@@ -143,7 +143,7 @@ func (l *Local) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpB
 
 func (l *Local) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
 	if !l.rotateEnabled {
-		logCh <- logger.Log(job.GetName(), l.GetName()).Debugf("Backup rotate skipped by config.")
+		logCh <- logger.Log(job.GetName(), l.GetName()).Info("Backup rotation was skipped (disabled in config)")
 		return nil
 	}
 

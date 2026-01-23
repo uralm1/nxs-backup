@@ -147,7 +147,7 @@ func (f *FTP) copy(logCh chan logger.LogRecord, job, src, dst string) error {
 
 func (f *FTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
 	if !f.rotateEnabled {
-		logCh <- logger.Log(job.GetName(), f.name).Debugf("Backup rotate was skipped (disabled in config).")
+		logCh <- logger.Log(job.GetName(), f.name).Info("Backup rotation was skipped (disabled in config)")
 		return nil
 	}
 

@@ -192,7 +192,7 @@ func (s *SFTP) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBa
 
 func (s *SFTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
 	if !s.rotateEnabled {
-		logCh <- logger.Log(job.GetName(), s.name).Debugf("Backup rotate skipped by config.")
+		logCh <- logger.Log(job.GetName(), s.name).Info("Backup rotation was skipped (disabled in config)")
 		return nil
 	}
 

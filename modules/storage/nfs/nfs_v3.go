@@ -148,7 +148,7 @@ func (n *NFS) copy(logCh chan logger.LogRecord, jobName, dst, src string) error 
 
 func (n *NFS) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
 	if !n.rotateEnabled {
-		logCh <- logger.Log(job.GetName(), n.name).Debugf("Backup rotate skipped by config.")
+		logCh <- logger.Log(job.GetName(), n.name).Info("Backup rotation was skipped (disabled in config)")
 		return nil
 	}
 
