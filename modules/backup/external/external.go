@@ -20,7 +20,6 @@ type job struct {
 	needToMakeBackup bool
 	gzip             bool
 	safeRotation     bool
-	skipBackupRotate bool // deprecated
 	diskRateLimit    int64
 	name             string
 	appMetrics       *metrics.Data
@@ -35,7 +34,6 @@ type JobParams struct {
 	NeedToMakeBackup bool
 	Gzip             bool
 	SafeRotation     bool
-	SkipBackupRotate bool // deprecated
 	DiskRateLimit    int64
 	Name             string
 	Metrics          *metrics.Data
@@ -46,7 +44,6 @@ type JobParams struct {
 }
 
 func Init(jp JobParams) (interfaces.Job, error) {
-
 	j := job{
 		name:             jp.Name,
 		dumpCmd:          jp.DumpCmd,
@@ -55,7 +52,6 @@ func Init(jp JobParams) (interfaces.Job, error) {
 		needToMakeBackup: jp.NeedToMakeBackup,
 		gzip:             jp.Gzip,
 		safeRotation:     jp.SafeRotation,
-		skipBackupRotate: jp.SkipBackupRotate,
 		diskRateLimit:    jp.DiskRateLimit,
 		storages:         jp.Storages,
 		dumpedObjects:    make(map[string]interfaces.DumpObject),
@@ -137,10 +133,6 @@ func (j *job) NeedToUpdateIncMeta() bool {
 
 func (j *job) DeleteOldBackups(logCh chan logger.LogRecord, ofsPath string) error {
 	logCh <- logger.Log(j.name, "").Debugf("Starting rotate outdated backups.")
-	if j.skipBackupRotate {
-		logCh <- logger.Log(j.name, "").Debugf("Backup rotate skipped by config.")
-		return nil
-	}
 	return j.storages.DeleteOldBackups(logCh, j, ofsPath)
 }
 
@@ -149,7 +141,6 @@ func (j *job) CleanupTmpData() error {
 }
 
 func (j *job) DoBackup(logCh chan logger.LogRecord, _ string) (err error) {
-
 	var stderr, stdout bytes.Buffer
 
 	startTime := time.Now()
@@ -200,10 +191,6 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, _ string) (err error) {
 
 	logCh <- logger.Log(j.name, "").Infof("Dumping completed")
 	logCh <- logger.Log(j.name, "").Debugf("STDOUT: %s", stdout.String())
-
-	if j.skipBackupRotate {
-		return
-	}
 
 	var out struct {
 		FullPath string `json:"full_path"`

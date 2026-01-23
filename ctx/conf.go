@@ -75,17 +75,16 @@ type webhookConf struct {
 }
 
 type jobConf struct {
-	SafeRotation     bool            `conf:"safe_rotation" conf_extraopts:"default=false"`
-	DeferredCopying  bool            `conf:"deferred_copying" conf_extraopts:"default=false"`
-	SkipBackupRotate bool            `conf:"skip_backup_rotate" conf_extraopts:"default=false"` // deprecated, used by external
-	Gzip             bool            `conf:"gzip" conf_extraopts:"default=false"`
-	Name             string          `conf:"job_name" conf_extraopts:"required"`
-	DumpCmd          string          `conf:"dump_cmd"` // used by external
-	TmpDir           string          `conf:"tmp_dir"`
-	Type             misc.BackupType `conf:"type" conf_extraopts:"required"`
-	Limits           *limitsConf     `conf:"limits"`
-	Sources          []sourceConf    `conf:"sources"`
-	StoragesOptions  []storageConf   `conf:"storages_options"`
+	SafeRotation    bool            `conf:"safe_rotation" conf_extraopts:"default=false"`
+	DeferredCopying bool            `conf:"deferred_copying" conf_extraopts:"default=false"`
+	Gzip            bool            `conf:"gzip" conf_extraopts:"default=false"`
+	Name            string          `conf:"job_name" conf_extraopts:"required"`
+	DumpCmd         string          `conf:"dump_cmd"` // used by external
+	TmpDir          string          `conf:"tmp_dir"`
+	Type            misc.BackupType `conf:"type" conf_extraopts:"required"`
+	Limits          *limitsConf     `conf:"limits"`
+	Sources         []sourceConf    `conf:"sources"`
+	StoragesOptions []storageConf   `conf:"storages_options"`
 }
 
 type sourceConf struct {

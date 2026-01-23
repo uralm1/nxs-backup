@@ -13,7 +13,7 @@ import (
 	"github.com/uralm1/nxs-backup/misc"
 )
 
-type jobCfgYml struct {
+type jobCfgYaml struct {
 	JobName         string            `yaml:"job_name"`
 	JobType         misc.BackupType   `yaml:"type"`
 	TmpDir          string            `yaml:"tmp_dir,omitempty"`
@@ -38,7 +38,6 @@ type sourceYaml struct {
 	SaveAbsPath        bool           `yaml:"save_abs_path,omitempty"`
 	IsSlave            bool           `yaml:"is_slave,omitempty"`
 	ExtraKeys          string         `yaml:"db_extra_keys,omitempty"`
-	SkipBackupRotate   bool           `yaml:"skip_backup_rotate,omitempty"` // used by external
 	PrepareXtrabackup  bool           `yaml:"prepare_xtrabackup,omitempty"`
 }
 
@@ -157,7 +156,7 @@ func Init(o Opts) *generateConfig {
 
 func (gc *generateConfig) Run() {
 
-	job := jobCfgYml{
+	job := jobCfgYaml{
 		JobName:         fmt.Sprintf("PROJECT-%s", gc.jobType),
 		JobType:         gc.jobType,
 		DeferredCopying: false,

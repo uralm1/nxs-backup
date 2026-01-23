@@ -388,15 +388,11 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 			})
 
 		case misc.External:
-			if j.SkipBackupRotate {
-				errs = append(errs, fmt.Errorf("Option `skip_backup_rotate` for job \"%s\" is deprecated. Use `storages_options[].enable_rotate` instead. ", j.Name))
-			}
 			job, err = external.Init(external.JobParams{
 				Name:             j.Name,
 				DumpCmd:          j.DumpCmd,
 				NeedToMakeBackup: needToMakeBackup,
 				SafeRotation:     j.SafeRotation,
-				SkipBackupRotate: j.SkipBackupRotate,
 				DiskRateLimit:    diskRate,
 				Storages:         jobStorages,
 				Metrics:          o.metricsData,
