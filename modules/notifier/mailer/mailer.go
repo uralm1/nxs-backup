@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
@@ -26,12 +27,16 @@ type Opts struct {
 }
 
 type mailer struct {
-	opts      Opts
-	a_message logger.LogRecord
+	opts    Opts
+	message struct {
+		job     string
+		storage string
+		lines   []string
+	}
 }
 
 func (m *mailer) SupportPostponedNotification() bool {
-	return /*true*/ false
+	return true
 }
 
 func Init(mailCfg Opts) (*mailer, error) {
@@ -45,15 +50,25 @@ func Init(mailCfg Opts) (*mailer, error) {
 		}
 		defer func() { _ = sc.Close() }()
 	}
+	//reserve space for 10 lines
+	m.message.lines = make([]string, 0, 10)
 
 	return m, nil
+}
+
+func (m *mailer) ClearBuffer() {
+	m.message.job = ""
+	m.message.storage = ""
+	m.message.lines = m.message.lines[:0]
 }
 
 func (m *mailer) TakeEvent(log *logrus.Logger, n logger.LogRecord) {
 	if n.Level > m.opts.MessageLevel {
 		return
 	}
-	m.a_message = n
+	m.message.job = n.JobName
+	m.message.storage = n.StorageName
+	m.message.lines = append(m.message.lines, m.createMailBodyLine(n))
 }
 
 func (m *mailer) SendBuffer(log *logrus.Logger) {
@@ -67,13 +82,32 @@ func (m *mailer) SendBuffer(log *logrus.Logger) {
 	msg.SetHeader("From", m.opts.From)
 	msg.SetHeader("To", m.opts.Recipients...)
 
-	subjStr := fmt.Sprintf("[%s] Nxs-backup notification: server %q", m.a_message.Level, m.opts.ServerName)
-	if m.opts.ProjectName != "" {
-		subjStr += fmt.Sprintf(", project %q", m.opts.ProjectName)
-	}
-	msg.SetHeader("Subject", subjStr)
+	var subj strings.Builder
+	subj.Grow(100)
+	var body strings.Builder
+	body.Grow(255)
 
-	msg.SetBody("text/html", m.createMailBody(m.a_message))
+	var pn string
+	subj.WriteString("Nxs-backup")
+	fmt.Fprintf(&body, "Server %q\n", m.opts.ServerName)
+	if m.opts.ProjectName != "" {
+		pn = fmt.Sprintf(" (%q)", m.opts.ProjectName)
+		fmt.Fprintf(&body, "Project %q\n", m.opts.ProjectName)
+	}
+
+	if m.message.job != "" {
+		fmt.Fprintf(&subj, " %s", m.message.job)
+		fmt.Fprintf(&body, "Job: %s\n", m.message.job)
+	}
+	fmt.Fprintf(&subj, " on %q%s", m.opts.ServerName, pn)
+	msg.SetHeader("Subject", subj.String())
+
+	if m.message.storage != "" {
+		fmt.Fprintf(&body, "Storage: %s\n", m.message.storage)
+	}
+	body.WriteString("\n")
+	body.WriteString(strings.Join(m.message.lines, "\n"))
+	msg.SetBody("text/plain", body.String())
 
 	if m.opts.SmtpServer != "" {
 		d := gomail.NewDialer(m.opts.SmtpServer, m.opts.SmtpPort, m.opts.SmtpUser, m.opts.SmtpPassword)
@@ -91,34 +125,21 @@ func (m *mailer) SendBuffer(log *logrus.Logger) {
 	}
 }
 
-func (m *mailer) createMailBody(n logger.LogRecord) (b string) {
+func (m *mailer) createMailBodyLine(n logger.LogRecord) string {
+	var sb strings.Builder
+	sb.Grow(200)
 	switch n.Level {
 	case logrus.DebugLevel:
-		b += "[DEBUG]:\n\n"
+		sb.WriteString("[DEBUG]")
 	case logrus.InfoLevel:
-		b += "[INFO]:\n\n"
+		sb.WriteString("[INFO]")
 	case logrus.WarnLevel:
-		b += "[WARNING]:\n\n"
+		sb.WriteString("[WARNING]")
 	case logrus.ErrorLevel:
-		b += "[ERROR]:\n\n"
+		sb.WriteString("[ERROR]")
 	}
-
-	if m.opts.ProjectName != "" {
-		b += fmt.Sprintf("Project: %s\n", m.opts.ProjectName)
-	}
-	if m.opts.ServerName != "" {
-		b += fmt.Sprintf("Server: %s\n\n", m.opts.ServerName)
-	}
-
-	if n.JobName != "" {
-		b += fmt.Sprintf("Job: %s\n", n.JobName)
-	}
-	if n.StorageName != "" {
-		b += fmt.Sprintf("Storage: %s\n", n.StorageName)
-	}
-	b += fmt.Sprintf("Message: %s\n", n.Message)
-
-	return
+	fmt.Fprintf(&sb, ": %s", n.Message)
+	return sb.String()
 }
 
 type localMail struct {

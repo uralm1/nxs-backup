@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -64,6 +65,9 @@ func Init(opts Opts) (*webhook, error) {
 	return wh, nil
 }
 
+func (wh *webhook) ClearBuffer() {
+}
+
 func (wh *webhook) TakeEvent(log *logrus.Logger, n logger.LogRecord) {
 	if n.Level > wh.opts.MessageLevel {
 		return
@@ -105,37 +109,43 @@ func (wh *webhook) SendBuffer(log *logrus.Logger) {
 }
 
 // createMessage generates notification message from event log record
-func (wh *webhook) createMessage(n logger.LogRecord) (m string) {
+func (wh *webhook) createMessage(n logger.LogRecord) string {
+	var sb strings.Builder
+	sb.Grow(255)
 	switch n.Level {
 	case logrus.DebugLevel:
-		m += "[DEBUG]\n\n"
+		sb.WriteString("[DEBUG]")
 	case logrus.InfoLevel:
-		m += "[INFO]\n\n"
+		sb.WriteString("[INFO]")
 	case logrus.WarnLevel:
-		m += "[WARNING]\n\n"
+		sb.WriteString("[WARNING]")
 	case logrus.ErrorLevel:
-		m += "[ERROR]\n\n"
+		sb.WriteString("[ERROR]")
 	case logrus.PanicLevel:
 	case logrus.FatalLevel:
 	case logrus.TraceLevel:
 	}
 
+	if sb.Len() > 0 {
+		sb.WriteString("\n\n")
+	}
+
 	if wh.opts.ProjectName != "" {
-		m += fmt.Sprintf("Project: %s\n", wh.opts.ProjectName)
+		fmt.Fprintf(&sb, "Project: %s\n", wh.opts.ProjectName)
 	}
 	if wh.opts.ServerName != "" {
-		m += fmt.Sprintf("Server: %s\n\n", wh.opts.ServerName)
+		fmt.Fprintf(&sb, "Server: %s\n\n", wh.opts.ServerName)
 	}
 
 	if n.JobName != "" {
-		m += fmt.Sprintf("Job: %s\n", n.JobName)
+		fmt.Fprintf(&sb, "Job: %s\n", n.JobName)
 	}
 	if n.StorageName != "" {
-		m += fmt.Sprintf("Storage: %s\n", n.StorageName)
+		fmt.Fprintf(&sb, "Storage: %s\n", n.StorageName)
 	}
-	m += fmt.Sprintf("\nMessage: %s\n", n.Message)
+	fmt.Fprintf(&sb, "\nMessage: %s\n", n.Message)
 
-	return
+	return sb.String()
 }
 
 func (wh *webhook) getJsonData(log *logrus.Logger, n logger.LogRecord) []byte {
