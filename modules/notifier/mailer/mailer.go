@@ -26,7 +26,12 @@ type Opts struct {
 }
 
 type mailer struct {
-	opts Opts
+	opts      Opts
+	a_message logger.LogRecord
+}
+
+func (m *mailer) SupportPostponedNotification() bool {
+	return /*true*/ false
 }
 
 func Init(mailCfg Opts) (*mailer, error) {
@@ -44,12 +49,14 @@ func Init(mailCfg Opts) (*mailer, error) {
 	return m, nil
 }
 
-// Send sends notification via Email
-func (m *mailer) Send(log *logrus.Logger, n logger.LogRecord) {
+func (m *mailer) TakeEvent(log *logrus.Logger, n logger.LogRecord) {
 	if n.Level > m.opts.MessageLevel {
 		return
 	}
+	m.a_message = n
+}
 
+func (m *mailer) SendBuffer(log *logrus.Logger) {
 	var (
 		sc  gomail.SendCloser
 		err error
@@ -60,13 +67,13 @@ func (m *mailer) Send(log *logrus.Logger, n logger.LogRecord) {
 	msg.SetHeader("From", m.opts.From)
 	msg.SetHeader("To", m.opts.Recipients...)
 
-	subjStr := fmt.Sprintf("[%s] Nxs-backup notification: server %q", n.Level, m.opts.ServerName)
+	subjStr := fmt.Sprintf("[%s] Nxs-backup notification: server %q", m.a_message.Level, m.opts.ServerName)
 	if m.opts.ProjectName != "" {
-		subjStr += fmt.Sprintf(" of project %q", m.opts.ProjectName)
+		subjStr += fmt.Sprintf(", project %q", m.opts.ProjectName)
 	}
 	msg.SetHeader("Subject", subjStr)
 
-	msg.SetBody("text/html", m.getMailBody(n))
+	msg.SetBody("text/html", m.createMailBody(m.a_message))
 
 	if m.opts.SmtpServer != "" {
 		d := gomail.NewDialer(m.opts.SmtpServer, m.opts.SmtpPort, m.opts.SmtpUser, m.opts.SmtpPassword)
@@ -84,7 +91,7 @@ func (m *mailer) Send(log *logrus.Logger, n logger.LogRecord) {
 	}
 }
 
-func (m *mailer) getMailBody(n logger.LogRecord) (b string) {
+func (m *mailer) createMailBody(n logger.LogRecord) (b string) {
 	switch n.Level {
 	case logrus.DebugLevel:
 		b += "[DEBUG]:\n\n"
@@ -97,7 +104,7 @@ func (m *mailer) getMailBody(n logger.LogRecord) (b string) {
 	}
 
 	if m.opts.ProjectName != "" {
-		b += fmt.Sprintf("project: %s\n", m.opts.ProjectName)
+		b += fmt.Sprintf("Project: %s\n", m.opts.ProjectName)
 	}
 	if m.opts.ServerName != "" {
 		b += fmt.Sprintf("Server: %s\n\n", m.opts.ServerName)

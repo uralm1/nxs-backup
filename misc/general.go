@@ -14,9 +14,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/sirupsen/logrus"
-
-	"github.com/uralm1/nxs-backup/modules/logger"
 )
 
 type BackupType string
@@ -149,40 +146,6 @@ func RandString(strLen int64) string {
 	}
 
 	return string(b)
-}
-
-// GetMessage generates notification message from event log record
-func GetMessage(n logger.LogRecord, project, server string) (m string) {
-	switch n.Level {
-	case logrus.DebugLevel:
-		m += "[DEBUG]\n\n"
-	case logrus.InfoLevel:
-		m += "[INFO]\n\n"
-	case logrus.WarnLevel:
-		m += "⚠️[WARNING]⚠️\n\n"
-	case logrus.ErrorLevel:
-		m += "‼️[ERROR]‼️\n\n"
-	case logrus.PanicLevel:
-	case logrus.FatalLevel:
-	case logrus.TraceLevel:
-	}
-
-	if project != "" {
-		m += fmt.Sprintf("project: %s\n", project)
-	}
-	if server != "" {
-		m += fmt.Sprintf("Server: %s\n\n", server)
-	}
-
-	if n.JobName != "" {
-		m += fmt.Sprintf("Job: %s\n", n.JobName)
-	}
-	if n.StorageName != "" {
-		m += fmt.Sprintf("Storage: %s\n", n.StorageName)
-	}
-	m += fmt.Sprintf("\nMessage: %s\n", n.Message)
-
-	return
 }
 
 // CheckNewVersionAvailable checks if new version is available

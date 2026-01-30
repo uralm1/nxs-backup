@@ -13,49 +13,49 @@ type LogRecord struct {
 	Message     string
 }
 
-func (r LogRecord) Debugf(format string, args ...interface{}) LogRecord {
+func (r LogRecord) Debugf(format string, args ...any) LogRecord {
 	r.Level = logrus.DebugLevel
 	r.Message = fmt.Sprintf(format, args...)
 	return r
 }
 
-func (r LogRecord) Debug(args ...interface{}) LogRecord {
+func (r LogRecord) Debug(args ...any) LogRecord {
 	r.Level = logrus.DebugLevel
 	r.Message = fmt.Sprint(args...)
 	return r
 }
 
-func (r LogRecord) Infof(format string, args ...interface{}) LogRecord {
+func (r LogRecord) Infof(format string, args ...any) LogRecord {
 	r.Level = logrus.InfoLevel
 	r.Message = fmt.Sprintf(format, args...)
 	return r
 }
 
-func (r LogRecord) Info(args ...interface{}) LogRecord {
+func (r LogRecord) Info(args ...any) LogRecord {
 	r.Level = logrus.InfoLevel
 	r.Message = fmt.Sprint(args...)
 	return r
 }
 
-func (r LogRecord) Warnf(format string, args ...interface{}) LogRecord {
+func (r LogRecord) Warnf(format string, args ...any) LogRecord {
 	r.Level = logrus.WarnLevel
 	r.Message = fmt.Sprintf(format, args...)
 	return r
 }
 
-func (r LogRecord) Warn(args ...interface{}) LogRecord {
+func (r LogRecord) Warn(args ...any) LogRecord {
 	r.Level = logrus.WarnLevel
 	r.Message = fmt.Sprint(args...)
 	return r
 }
 
-func (r LogRecord) Errorf(format string, args ...interface{}) LogRecord {
+func (r LogRecord) Errorf(format string, args ...any) LogRecord {
 	r.Level = logrus.ErrorLevel
 	r.Message = fmt.Sprintf(format, args...)
 	return r
 }
 
-func (r LogRecord) Error(args ...interface{}) LogRecord {
+func (r LogRecord) Error(args ...any) LogRecord {
 	r.Level = logrus.ErrorLevel
 	r.Message = fmt.Sprint(args...)
 	return r

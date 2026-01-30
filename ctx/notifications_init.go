@@ -8,7 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/uralm1/nxs-backup/modules/notifier/mailer"
-	"github.com/uralm1/nxs-backup/modules/notifier/webhooker"
+	"github.com/uralm1/nxs-backup/modules/notifier/webhook"
 
 	"github.com/uralm1/nxs-backup/interfaces"
 )
@@ -32,11 +32,11 @@ func notifiersInit(c *Ctx, conf ConfOpts) error {
 		for _, a := range mailList {
 			_, err := mail.ParseAddress(a)
 			if err != nil {
-				mailErrs = append(mailErrs, fmt.Errorf("Email init fail. Failed to parse email \"%s\". %v ", a, err))
+				mailErrs = append(mailErrs, fmt.Errorf("Email init failed. Failed to parse email \"%s\". %v ", a, err))
 			}
 		}
 		if _, err := mail.ParseAddress(conf.Notifications.Mail.From); err != nil {
-			mailErrs = append(mailErrs, fmt.Errorf("Email init fail. Failed to parse `mail_from` \"%s\". %v ", conf.Notifications.Mail.From, err))
+			mailErrs = append(mailErrs, fmt.Errorf("Email init failed. Failed to parse `mail_from` \"%s\". %v ", conf.Notifications.Mail.From, err))
 		}
 
 		ml, ok := messageLevels[strings.ToUpper(conf.Notifications.Mail.MessageLevel)]
@@ -62,7 +62,7 @@ func notifiersInit(c *Ctx, conf ConfOpts) error {
 				}
 			}
 		} else {
-			errs = append(errs, fmt.Errorf("Email init fail. Unknown message level. Available levels: 'INFO', 'WARN', 'ERR' "))
+			errs = append(errs, fmt.Errorf("Email init failed. Unknown message level. Available levels: 'INFO', 'WARN', 'ERR' "))
 		}
 	}
 
@@ -70,7 +70,7 @@ func notifiersInit(c *Ctx, conf ConfOpts) error {
 		if wh.Enabled {
 			ml, ok := messageLevels[strings.ToUpper(wh.MessageLevel)]
 			if ok {
-				a, err := webhooker.Init(webhooker.Opts{
+				a, err := webhook.Init(webhook.Opts{
 					WebhookURL:        wh.WebhookURL,
 					InsecureTLS:       wh.InsecureTLS,
 					ExtraHeaders:      wh.ExtraHeaders,
@@ -86,7 +86,7 @@ func notifiersInit(c *Ctx, conf ConfOpts) error {
 					ns = append(ns, a)
 				}
 			} else {
-				errs = append(errs, fmt.Errorf("Webhook init fail. Unknown message level. Available levels: 'INFO', 'WARN', 'ERR' "))
+				errs = append(errs, fmt.Errorf("Webhook init failed. Unknown message level. Available levels: 'INFO', 'WARN', 'ERR' "))
 			}
 		}
 	}

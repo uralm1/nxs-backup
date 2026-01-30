@@ -7,5 +7,7 @@ import (
 )
 
 type Notifier interface {
-	Send(log *logrus.Logger, rec logger.LogRecord)
+	SupportPostponedNotification() bool
+	TakeEvent(log *logrus.Logger, rec logger.LogRecord)
+	SendBuffer(log *logrus.Logger)
 }

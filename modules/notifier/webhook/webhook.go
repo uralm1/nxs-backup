@@ -1,18 +1,18 @@
-package webhooker
+package webhook
 
 import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/uralm1/nxs-backup/misc"
-	"github.com/uralm1/nxs-backup/modules/logger"
 	"github.com/sirupsen/logrus"
+	"github.com/uralm1/nxs-backup/modules/logger"
 )
 
 // Opts contains webhook options
@@ -20,7 +20,7 @@ type Opts struct {
 	WebhookURL        string
 	InsecureTLS       bool
 	PayloadMessageKey string
-	ExtraPayload      map[string]interface{}
+	ExtraPayload      map[string]any
 	ExtraHeaders      map[string]string
 	MessageLevel      logrus.Level
 	ProjectName       string
@@ -28,8 +28,13 @@ type Opts struct {
 }
 
 type webhook struct {
-	opts Opts
-	hc   *http.Client
+	opts      Opts
+	client    *http.Client
+	a_message logger.LogRecord
+}
+
+func (wh *webhook) SupportPostponedNotification() bool {
+	return false
 }
 
 func Init(opts Opts) (*webhook, error) {
@@ -46,7 +51,7 @@ func Init(opts Opts) (*webhook, error) {
 	d := &net.Dialer{
 		Timeout: 5 * time.Second,
 	}
-	wh.hc = &http.Client{
+	wh.client = &http.Client{
 		Transport: &http.Transport{
 			DialContext: d.DialContext,
 			//ResponseHeaderTimeout: 60 * time.Second,
@@ -59,12 +64,15 @@ func Init(opts Opts) (*webhook, error) {
 	return wh, nil
 }
 
-func (wh *webhook) Send(log *logrus.Logger, n logger.LogRecord) {
+func (wh *webhook) TakeEvent(log *logrus.Logger, n logger.LogRecord) {
 	if n.Level > wh.opts.MessageLevel {
 		return
 	}
+	wh.a_message = n
+}
 
-	req, err := http.NewRequest(http.MethodPost, wh.opts.WebhookURL, bytes.NewBuffer(wh.getJsonData(log, n)))
+func (wh *webhook) SendBuffer(log *logrus.Logger) {
+	req, err := http.NewRequest(http.MethodPost, wh.opts.WebhookURL, bytes.NewBuffer(wh.getJsonData(log, wh.a_message)))
 	if err != nil {
 		log.Errorf("Can't create webhook request: %v", err)
 		return
@@ -81,7 +89,7 @@ func (wh *webhook) Send(log *logrus.Logger, n logger.LogRecord) {
 		req.Header.Add(k, v)
 	}
 
-	resp, err := wh.hc.Do(req)
+	resp, err := wh.client.Do(req)
 	if err != nil {
 		log.Errorf("Request error: %v", err)
 		return
@@ -96,10 +104,44 @@ func (wh *webhook) Send(log *logrus.Logger, n logger.LogRecord) {
 	}
 }
 
-func (wh *webhook) getJsonData(log *logrus.Logger, n logger.LogRecord) []byte {
-	data := make(map[string]interface{})
+// createMessage generates notification message from event log record
+func (wh *webhook) createMessage(n logger.LogRecord) (m string) {
+	switch n.Level {
+	case logrus.DebugLevel:
+		m += "[DEBUG]\n\n"
+	case logrus.InfoLevel:
+		m += "[INFO]\n\n"
+	case logrus.WarnLevel:
+		m += "[WARNING]\n\n"
+	case logrus.ErrorLevel:
+		m += "[ERROR]\n\n"
+	case logrus.PanicLevel:
+	case logrus.FatalLevel:
+	case logrus.TraceLevel:
+	}
 
-	data[wh.opts.PayloadMessageKey] = misc.GetMessage(n, wh.opts.ProjectName, wh.opts.ServerName)
+	if wh.opts.ProjectName != "" {
+		m += fmt.Sprintf("Project: %s\n", wh.opts.ProjectName)
+	}
+	if wh.opts.ServerName != "" {
+		m += fmt.Sprintf("Server: %s\n\n", wh.opts.ServerName)
+	}
+
+	if n.JobName != "" {
+		m += fmt.Sprintf("Job: %s\n", n.JobName)
+	}
+	if n.StorageName != "" {
+		m += fmt.Sprintf("Storage: %s\n", n.StorageName)
+	}
+	m += fmt.Sprintf("\nMessage: %s\n", n.Message)
+
+	return
+}
+
+func (wh *webhook) getJsonData(log *logrus.Logger, n logger.LogRecord) []byte {
+	data := make(map[string]any)
+
+	data[wh.opts.PayloadMessageKey] = wh.createMessage(n)
 	for k, v := range wh.opts.ExtraPayload {
 		data[k] = v
 	}

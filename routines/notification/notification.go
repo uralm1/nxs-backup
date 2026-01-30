@@ -21,7 +21,10 @@ func Runtime(cc *ctx.Ctx, rctx context.Context) error {
 			for _, n := range cc.Notifiers {
 				cc.EventsWG.Add(1)
 				go func(n interfaces.Notifier) {
-					n.Send(cc.Log, event)
+					n.TakeEvent(cc.Log, event)
+					if !n.SupportPostponedNotification() {
+						n.SendBuffer(cc.Log)
+					}
 					cc.EventsWG.Done()
 				}(n)
 			}
