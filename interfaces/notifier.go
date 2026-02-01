@@ -1,3 +1,5 @@
+// this file was modified as of a derivative work of nxs-backup
+
 package interfaces
 
 import (
@@ -7,7 +9,7 @@ import (
 )
 
 type Notifier interface {
-	SupportPostponedNotification() bool
+	CanCombineMessages() bool
 	ClearBuffer()
 	TakeEvent(log *logrus.Logger, rec logger.LogRecord)
 	SendBuffer(log *logrus.Logger)

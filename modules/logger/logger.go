@@ -1,3 +1,5 @@
+// this file was modified as of a derivative work of nxs-backup
+
 package logger
 
 import (
@@ -11,6 +13,15 @@ type LogRecord struct {
 	JobName     string
 	StorageName string
 	Message     string
+}
+
+// the schema is: logrecord := Log(job, storage).Info("message")
+// then: WriteLog(logger, logrecord)
+func Log(jobName, storageName string) LogRecord {
+	return LogRecord{
+		JobName:     jobName,
+		StorageName: storageName,
+	}
 }
 
 func (r LogRecord) Debugf(format string, args ...any) LogRecord {
@@ -61,13 +72,6 @@ func (r LogRecord) Error(args ...any) LogRecord {
 	return r
 }
 
-func Log(jobName, storageName string) LogRecord {
-	return LogRecord{
-		JobName:     jobName,
-		StorageName: storageName,
-	}
-}
-
 func WriteLog(logger *logrus.Logger, log LogRecord) {
-	logger.WithFields(logrus.Fields{"store": log.StorageName, "job": log.JobName}).Log(log.Level, log.Message)
+	logger.WithFields(logrus.Fields{"storage": log.StorageName, "job": log.JobName}).Log(log.Level, log.Message)
 }

@@ -146,5 +146,5 @@ func (sb *startBackup) Run() {
 		}
 	}
 
-	sb.evCh <- logger.Log("", "").Infof("Backup finished.\n")
+	sb.evCh <- logger.Log("_flush_notification", "").Infof("Backup finished.\n")
 }

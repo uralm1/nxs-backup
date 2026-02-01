@@ -1,3 +1,5 @@
+// this file was modified as of a derivative work of nxs-backup
+
 package webhook
 
 import (
@@ -10,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -31,15 +34,15 @@ type Opts struct {
 type webhook struct {
 	opts      Opts
 	client    *http.Client
-	a_message logger.LogRecord
+	a_message string
+	lock      sync.Mutex
 }
 
-func (wh *webhook) SupportPostponedNotification() bool {
+func (wh *webhook) CanCombineMessages() bool {
 	return false
 }
 
 func Init(opts Opts) (*webhook, error) {
-
 	wh := &webhook{
 		opts: opts,
 	}
@@ -66,17 +69,41 @@ func Init(opts Opts) (*webhook, error) {
 }
 
 func (wh *webhook) ClearBuffer() {
+	wh.lock.Lock()
+	defer wh.lock.Unlock()
+	wh.clearBuffer_nolock()
+}
+
+func (wh *webhook) clearBuffer_nolock() {
+	wh.a_message = ""
 }
 
 func (wh *webhook) TakeEvent(log *logrus.Logger, n logger.LogRecord) {
 	if n.Level > wh.opts.MessageLevel {
 		return
 	}
-	wh.a_message = n
+
+	wh.lock.Lock()
+	defer wh.lock.Unlock()
+
+	wh.a_message = wh.createMessage(n)
 }
 
 func (wh *webhook) SendBuffer(log *logrus.Logger) {
-	req, err := http.NewRequest(http.MethodPost, wh.opts.WebhookURL, bytes.NewBuffer(wh.getJsonData(log, wh.a_message)))
+	wh.lock.Lock()
+
+	//TODO if we implement buffered operation, we must check for empty buffer here and return
+	if wh.a_message == "" {
+		wh.lock.Unlock()
+		return
+	}
+
+	msg_str := wh.a_message
+
+	wh.clearBuffer_nolock()
+	wh.lock.Unlock()
+
+	req, err := http.NewRequest(http.MethodPost, wh.opts.WebhookURL, bytes.NewBuffer(wh.getJsonData(log, msg_str)))
 	if err != nil {
 		log.Errorf("Can't create webhook request: %v", err)
 		return
@@ -110,6 +137,10 @@ func (wh *webhook) SendBuffer(log *logrus.Logger) {
 
 // createMessage generates notification message from event log record
 func (wh *webhook) createMessage(n logger.LogRecord) string {
+	if n.Message == "" {
+		return ""
+	}
+
 	var sb strings.Builder
 	sb.Grow(255)
 	switch n.Level {
@@ -148,10 +179,10 @@ func (wh *webhook) createMessage(n logger.LogRecord) string {
 	return sb.String()
 }
 
-func (wh *webhook) getJsonData(log *logrus.Logger, n logger.LogRecord) []byte {
+func (wh *webhook) getJsonData(log *logrus.Logger, message string) []byte {
 	data := make(map[string]any)
 
-	data[wh.opts.PayloadMessageKey] = wh.createMessage(n)
+	data[wh.opts.PayloadMessageKey] = message
 	for k, v := range wh.opts.ExtraPayload {
 		data[k] = v
 	}

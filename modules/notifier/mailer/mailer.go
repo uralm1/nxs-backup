@@ -1,3 +1,5 @@
+// this file was modified as of a derivative work of nxs-backup
+
 package mailer
 
 import (
@@ -6,10 +8,12 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 
+	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/logger"
 )
 
@@ -29,13 +33,15 @@ type Opts struct {
 type mailer struct {
 	opts    Opts
 	message struct {
-		job     string
-		storage string
-		lines   []string
+		jobs         []string //strings: "job1, job2"
+		lines        []string
+		lowest_level logrus.Level //lowest level in all buffer, to determine send buffer or not
+		lock         sync.Mutex
 	}
+	pass_level logrus.Level //highest level we accept into buffer
 }
 
-func (m *mailer) SupportPostponedNotification() bool {
+func (m *mailer) CanCombineMessages() bool {
 	return true
 }
 
@@ -50,37 +56,67 @@ func Init(mailCfg Opts) (*mailer, error) {
 		}
 		defer func() { _ = sc.Close() }()
 	}
-	//reserve space for 10 lines
+	//reserve space for 10 lines and one job
 	m.message.lines = make([]string, 0, 10)
+	m.message.jobs = make([]string, 0, 1)
+
+	if m.opts.MessageLevel < logrus.DebugLevel {
+		m.pass_level = logrus.InfoLevel //Info,Error,Warn etc set to Info
+	} else {
+		m.pass_level = m.opts.MessageLevel //Debug,Trace set to Debug,Trace
+	}
+	m.message.lowest_level = logrus.TraceLevel //set to maximum level here
 
 	return m, nil
 }
 
 func (m *mailer) ClearBuffer() {
-	m.message.job = ""
-	m.message.storage = ""
+	m.message.lock.Lock()
+	defer m.message.lock.Unlock()
+	m.clearBuffer_nolock()
+}
+
+func (m *mailer) clearBuffer_nolock() {
+	m.message.jobs = m.message.jobs[:0]
 	m.message.lines = m.message.lines[:0]
+	m.message.lowest_level = logrus.TraceLevel
 }
 
 func (m *mailer) TakeEvent(log *logrus.Logger, n logger.LogRecord) {
-	if n.Level > m.opts.MessageLevel {
+	if n.Level > m.pass_level {
 		return
 	}
-	m.message.job = n.JobName
-	m.message.storage = n.StorageName
+
+	m.message.lock.Lock()
+	defer m.message.lock.Unlock()
+
+	if n.Level < m.message.lowest_level {
+		m.message.lowest_level = n.Level
+	}
+
+	if n.JobName != "" {
+		if !misc.Contains(m.message.jobs, n.JobName) {
+			m.message.jobs = append(m.message.jobs, n.JobName)
+		}
+	}
+
 	m.message.lines = append(m.message.lines, m.createMailBodyLine(n))
 }
 
 func (m *mailer) SendBuffer(log *logrus.Logger) {
-	var (
-		sc  gomail.SendCloser
-		err error
-	)
-	defer func() { _ = sc.Close() }()
+	m.message.lock.Lock()
 
-	msg := gomail.NewMessage()
-	msg.SetHeader("From", m.opts.From)
-	msg.SetHeader("To", m.opts.Recipients...)
+	//don't send anything if the buffer is empty
+	if len(m.message.lines) == 0 {
+		m.message.lock.Unlock()
+		return
+	}
+	//drop buffer if its level is not enough
+	if m.message.lowest_level > m.opts.MessageLevel {
+		m.clearBuffer_nolock()
+		m.message.lock.Unlock()
+		return
+	}
 
 	var subj strings.Builder
 	subj.Grow(100)
@@ -89,24 +125,33 @@ func (m *mailer) SendBuffer(log *logrus.Logger) {
 
 	var pn string
 	subj.WriteString("Nxs-backup")
-	fmt.Fprintf(&body, "Server %q\n", m.opts.ServerName)
+	fmt.Fprintf(&body, "Server: %s\n", m.opts.ServerName)
 	if m.opts.ProjectName != "" {
-		pn = fmt.Sprintf(" (%q)", m.opts.ProjectName)
-		fmt.Fprintf(&body, "Project %q\n", m.opts.ProjectName)
+		pn = fmt.Sprintf(" (%s)", m.opts.ProjectName)
+		fmt.Fprintf(&body, "Project: %s\n", m.opts.ProjectName)
 	}
 
-	if m.message.job != "" {
-		fmt.Fprintf(&subj, " %s", m.message.job)
-		fmt.Fprintf(&body, "Job: %s\n", m.message.job)
+	if len(m.message.jobs) > 0 {
+		fmt.Fprintf(&subj, " %s", strings.Join(m.message.jobs, ", "))
+		fmt.Fprintf(&body, "Job: %s\n", strings.Join(m.message.jobs, ", "))
 	}
-	fmt.Fprintf(&subj, " on %q%s", m.opts.ServerName, pn)
-	msg.SetHeader("Subject", subj.String())
+	fmt.Fprintf(&subj, " on %s%s", m.opts.ServerName, pn)
 
-	if m.message.storage != "" {
-		fmt.Fprintf(&body, "Storage: %s\n", m.message.storage)
-	}
 	body.WriteString("\n")
 	body.WriteString(strings.Join(m.message.lines, "\n"))
+
+	m.clearBuffer_nolock()
+	m.message.lock.Unlock()
+
+	var sc gomail.SendCloser
+	var err error
+
+	defer func() { _ = sc.Close() }()
+
+	msg := gomail.NewMessage()
+	msg.SetHeader("From", m.opts.From)
+	msg.SetHeader("To", m.opts.Recipients...)
+	msg.SetHeader("Subject", subj.String())
 	msg.SetBody("text/plain", body.String())
 
 	if m.opts.SmtpServer != "" {
@@ -138,7 +183,14 @@ func (m *mailer) createMailBodyLine(n logger.LogRecord) string {
 	case logrus.ErrorLevel:
 		sb.WriteString("[ERROR]")
 	}
-	fmt.Fprintf(&sb, ": %s", n.Message)
+
+	if n.JobName != "" {
+		fmt.Fprintf(&sb, "[%s]", n.JobName)
+	}
+	if n.StorageName != "" {
+		fmt.Fprintf(&sb, "(%s)", n.StorageName)
+	}
+	fmt.Fprintf(&sb, " %s", n.Message)
 	return sb.String()
 }
 

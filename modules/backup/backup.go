@@ -17,12 +17,12 @@ func Perform(logCh chan logger.LogRecord, job interfaces.Job) error {
 	var tmpDirPath string
 
 	if !job.NeedToMakeBackup() {
-		logCh <- logger.Log(job.GetName(), "").Infof("According to the backup plan today new backups are not created for job %s", job.GetName())
+		logCh <- logger.Log(job.GetName(), "").Infof("According to the backup plan today no new backups are created for the job %s", job.GetName())
 		return nil
 	}
 
 	if job.GetStoragesCount() == 0 {
-		logCh <- logger.Log(job.GetName(), "").Warn("There are no configured storages for job.")
+		logCh <- logger.Log(job.GetName(), "").Warn("There are no configured storages for the job.")
 		return nil
 	}
 

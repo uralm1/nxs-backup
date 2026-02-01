@@ -25,7 +25,7 @@ import (
 	"github.com/uralm1/nxs-backup/modules/metrics"
 )
 
-// Ctx defines application custom context
+// Ctx defines application context
 type Ctx struct {
 	Cmd       interfaces.Handler
 	Log       *logrus.Logger
@@ -146,8 +146,8 @@ func AppCtxInit() (*Ctx, error) {
 			return nil, err
 		}
 		if a.metricsData == nil {
-			err = fmt.Errorf("server metrics disabled by config")
-			printInitError("Init err:\n%s", err)
+			err = fmt.Errorf("server metrics disabled in config")
+			printInitError("Init error:\n%s", err)
 			return nil, err
 		}
 		c.Cmd, err = api_server.Init(
@@ -163,7 +163,7 @@ func AppCtxInit() (*Ctx, error) {
 		}
 	default:
 		err = fmt.Errorf("unknown command: %s", ra.Cmd)
-		printInitError("Init err:\n%s", err)
+		printInitError("Init error:\n%s", err)
 		return nil, err
 	}
 
