@@ -286,7 +286,7 @@ func (s *SMB) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 				dirMonth, _ := strconv.Atoi(dirParts[1])
 				if dirMonth < lastMonth {
 					if err = s.share.RemoveAll(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
+						logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' in directory '%s' with error: %s",
 							dirName, backupDir, err)
 						errs = append(errs, err)
 					} else {

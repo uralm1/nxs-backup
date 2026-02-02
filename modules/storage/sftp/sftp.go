@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -99,95 +98,71 @@ func (s *SFTP) Configure(p Params) {
 func (s *SFTP) IsLocal() int { return 0 }
 
 func (s *SFTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
-	backupDstPath, metadataDstPath, links, err :=
-		GetBackupDstAndLinks(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
-	if err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to get destination path and links: '%s'", err)
-		return
-	}
+	backupDstPaths, metadataDstPaths :=
+		GetBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
 
-	if metadataDstPath != "" { //this is actual only for incremental backup
-		if err = s.deliverBackupMetadata(logCh, jobName, tmpBackupFile, metadataDstPath); err != nil {
-			return
+	if len(metadataDstPaths) > 0 { //this is actual only for incremental backup
+		for _, dstPath := range metadataDstPaths {
+			// Make remote directories
+			remDir := path.Dir(dstPath)
+			if err = s.client.MkdirAll(remDir); err != nil {
+				logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
+				return
+			}
+
+			_ = s.client.Remove(dstPath)
+			metadataDst, err := s.client.Create(dstPath)
+			if err != nil {
+				return err
+			}
+			defer func() { _ = metadataDst.Close() }()
+
+			metadataSrc, err := files.GetLimitedFileReader(tmpBackupFile+".inc", s.rateLimit)
+			if err != nil {
+				return err
+			}
+			defer func() { _ = metadataSrc.Close() }()
+
+			_, err = io.Copy(metadataDst, metadataSrc)
+			if err != nil {
+				logCh <- logger.Log(jobName, s.name).Errorf("Unable to make copy: %s", err)
+				return err
+			}
+			logCh <- logger.Log(jobName, s.name).Infof("Successfully copied metadata to %s", dstPath)
 		}
 	}
 
-	// Make remote directories
-	rmDir := path.Dir(backupDstPath)
-	if err = s.client.MkdirAll(rmDir); err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", rmDir, err)
-		return err
-	}
+	for _, dstPath := range backupDstPaths {
+		// Make remote directories
+		remDir := path.Dir(dstPath)
+		if err = s.client.MkdirAll(remDir); err != nil {
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
+			return
+		}
 
-	dstFile, err := s.client.Create(backupDstPath)
-	if err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote file: %s", err)
-		return err
-	}
-	defer func() { _ = dstFile.Close() }()
-
-	srcFile, err := files.GetLimitedFileReader(tmpBackupFile, s.rateLimit)
-	if err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to open tmp backup: '%s'", err)
-		return err
-	}
-	defer func() { _ = srcFile.Close() }()
-
-	_, err = io.Copy(dstFile, srcFile)
-	if err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload file: %s", err)
-		return err
-	}
-	logCh <- logger.Log(jobName, s.name).Infof("file %s uploaded", dstFile.Name())
-
-	for dst, src := range links {
-		rmDir = path.Dir(dst)
-		err = s.client.MkdirAll(rmDir)
+		dstFile, err := s.client.Create(dstPath)
 		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", rmDir, err)
-			return
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote file: %s", err)
+			return err
 		}
-		err = s.client.Symlink(src, dst)
+		defer func() { _ = dstFile.Close() }()
+
+		srcFile, err := files.GetLimitedFileReader(tmpBackupFile, s.rateLimit)
 		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to create symlink: %s", err)
-			return
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to open tmp backup: '%s'", err)
+			return err
 		}
+		defer func() { _ = srcFile.Close() }()
+
+		_, err = io.Copy(dstFile, srcFile)
+		if err != nil {
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload file: %s", err)
+			return err
+		}
+		logCh <- logger.Log(jobName, s.name).Infof("File %s was successfully uploaded", dstFile.Name())
 	}
 
 	return
-}
-
-func (s *SFTP) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBackupFile, metadataDstPath string) error {
-	metadataSrcPath := tmpBackupFile + ".inc"
-
-	// Make remote directories
-	rmDir := path.Dir(metadataDstPath)
-	if err := s.client.MkdirAll(rmDir); err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", rmDir, err)
-		return err
-	}
-
-	_ = s.client.Remove(metadataDstPath)
-	metadataDst, err := s.client.Create(metadataDstPath)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = metadataDst.Close() }()
-
-	metadataSrc, err := files.GetLimitedFileReader(metadataSrcPath, s.rateLimit)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = metadataSrc.Close() }()
-
-	_, err = io.Copy(metadataDst, metadataSrc)
-	if err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to make copy: %s", err)
-		return err
-	}
-	logCh <- logger.Log(jobName, s.name).Infof("Successfully copied metadata to %s", metadataDstPath)
-
-	return nil
 }
 
 func (s *SFTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
@@ -204,13 +179,7 @@ func (s *SFTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job
 }
 
 func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safe_rotation bool) error {
-	type fileLinks struct {
-		wLink string
-		dLink string
-	}
 	var errs []error
-	filesMap := make(map[string]*fileLinks, 64)
-	filesToDeleteMap := make(map[string]*fileLinks, 64)
 
 	for _, p := range RetentionPeriodsList {
 		retentionCount, retentionDate := GetRetention(p, s.Retention)
@@ -218,39 +187,14 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 			continue
 		}
 
-		bakDir := path.Join(s.backupPath, ofsPart, p.String())
-		files, err := s.client.ReadDir(bakDir)
+		backupDir := path.Join(s.backupPath, ofsPart, p.String())
+		files, err := s.client.ReadDir(backupDir)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
-			logCh <- logger.Log(jobName, s.name).Errorf("Failed to read files in remote directory '%s' with error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, s.name).Errorf("Failed to read files in remote directory '%s' with error: %s", backupDir, err)
 			return err
-		}
-
-		for _, file := range files {
-			fPath := path.Join(bakDir, file.Name())
-			if file.Mode()&fs.ModeSymlink != 0 {
-				link, err := s.client.ReadLink(fPath)
-				if err != nil {
-					logCh <- logger.Log(jobName, s.name).Errorf("Failed to read a symlink for file '%s': %s",
-						file, err)
-					errs = append(errs, err)
-					continue
-				}
-				linkPath := filepath.Join(bakDir, link)
-
-				if fl, ok := filesMap[linkPath]; ok {
-					switch p {
-					case Weekly:
-						fl.wLink = fPath
-					case Daily:
-						fl.dLink = fPath
-					}
-					filesMap[linkPath] = fl
-				}
-			}
-			filesMap[fPath] = &fileLinks{}
 		}
 
 		if s.Retention.UseCount {
@@ -285,59 +229,13 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 			if file.Name() == ".." || file.Name() == "." {
 				continue
 			}
-			fPath := path.Join(bakDir, file.Name())
-			filesToDeleteMap[fPath] = filesMap[fPath]
-		}
-	}
 
-	for file, fl := range filesToDeleteMap {
-		delFile := true
-		moved := false
-		if fl.wLink != "" {
-			if _, toDel := filesToDeleteMap[fl.wLink]; !toDel {
-				delFile = false
-				if err := s.moveFile(file, fl.wLink); err != nil {
-					logCh <- logger.Log(jobName, s.name).Error(err)
-					errs = append(errs, err)
-				} else {
-					logCh <- logger.Log(jobName, s.name).Debugf("Successfully moved old backup to %s", fl.wLink)
-					moved = true
-				}
-				if _, toDel = filesToDeleteMap[fl.dLink]; !toDel {
-					if err := s.client.Remove(fl.dLink); err != nil {
-						logCh <- logger.Log(jobName, s.name).Error(err)
-						errs = append(errs, err)
-						break
-					}
-					relative, _ := filepath.Rel(filepath.Dir(fl.dLink), fl.wLink)
-					if err := s.client.Symlink(relative, fl.dLink); err != nil {
-						logCh <- logger.Log(jobName, s.name).Error(err)
-						errs = append(errs, err)
-					} else {
-						logCh <- logger.Log(jobName, s.name).Debugf("Successfully changed symlink %s", fl.dLink)
-					}
-				}
-			}
-		}
-		if fl.dLink != "" && !moved {
-			if _, toDel := filesToDeleteMap[fl.dLink]; !toDel {
-				delFile = false
-				if err := s.moveFile(file, fl.dLink); err != nil {
-					logCh <- logger.Log(jobName, s.name).Error(err)
-					errs = append(errs, err)
-				} else {
-					logCh <- logger.Log(jobName, s.name).Debugf("Successfully moved old backup to %s", fl.dLink)
-				}
-			}
-		}
-
-		if delFile {
-			if err := s.client.Remove(file); err != nil {
-				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with error: %s",
-					file, err)
+			f_path := path.Join(backupDir, file.Name())
+			if err := s.client.Remove(f_path); err != nil {
+				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with error: %s", f_path, err)
 				errs = append(errs, err)
 			} else {
-				logCh <- logger.Log(jobName, s.name).Infof("Deleted old backup file '%s'", file)
+				logCh <- logger.Log(jobName, s.name).Infof("Deleted old backup file '%s'", f_path)
 			}
 		}
 	}
@@ -350,9 +248,10 @@ func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 
 	if full {
 		backupDir := path.Join(s.backupPath, ofsPart)
+
 		if err := s.client.Remove(backupDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
-				logCh <- logger.Log(jobName, s.name).Debugf("Directory '%s' not exist. Skipping delete.", backupDir)
+				logCh <- logger.Log(jobName, s.name).Debugf("Directory '%s' is not exist. Deletion skipped.", backupDir)
 				return nil
 			}
 			logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
@@ -375,7 +274,7 @@ func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 		dirs, err := s.client.ReadDir(backupDir)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
-				logCh <- logger.Log(jobName, s.name).Debugf("Directory '%s' not exist. Skipping rotate.", backupDir)
+				logCh <- logger.Log(jobName, s.name).Debugf("Directory '%s' is not exist. Rotation skipped.", backupDir)
 				return nil
 			}
 			logCh <- logger.Log(jobName, s.name).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
@@ -389,7 +288,7 @@ func (s *SFTP) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 				dirMonth, _ := strconv.Atoi(dirParts[1])
 				if dirMonth < lastMonth {
 					if err = s.client.Remove(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
+						logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' in directory '%s' with error: %s",
 							dirName, backupDir, err)
 						errs = append(errs, err)
 					} else {
@@ -451,14 +350,4 @@ func (s *SFTP) Clone() interfaces.Storage {
 
 func (s *SFTP) GetName() string {
 	return s.name
-}
-
-func (s *SFTP) moveFile(oldPath, newPath string) error {
-	if err := s.client.Remove(newPath); err != nil {
-		return fmt.Errorf("Failed to delete file '%s' with error: %s ", oldPath, err)
-	}
-	if err := s.client.Rename(oldPath, newPath); err != nil {
-		return fmt.Errorf("Failed to move file '%s' with error: %s ", oldPath, err)
-	}
-	return nil
 }
