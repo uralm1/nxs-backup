@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
@@ -175,14 +176,16 @@ func (m *mailer) createMailBodyLine(n logger.LogRecord) string {
 	sb.Grow(200)
 	switch n.Level {
 	case logrus.DebugLevel:
-		sb.WriteString("[DEBUG]")
+		sb.WriteString("DEBUG")
 	case logrus.InfoLevel:
-		sb.WriteString("[INFO]")
+		sb.WriteString("INFO")
 	case logrus.WarnLevel:
-		sb.WriteString("[WARNING]")
+		sb.WriteString("WARNING")
 	case logrus.ErrorLevel:
-		sb.WriteString("[ERROR]")
+		sb.WriteString("ERROR")
 	}
+
+	fmt.Fprintf(&sb, " [%s]", time.Now().Format("2006-01-02 15:04:05"))
 
 	if n.JobName != "" {
 		fmt.Fprintf(&sb, "[%s]", n.JobName)
