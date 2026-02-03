@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+    - '[12][0-9].*'
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: actions/setup-go@v6
+      name: Setup Go
+      with:
+        go-version: '1.25.6'
+
+    #- name: Set version
+    #  run: V=${{ github.ref_name }} && VT="${V#v}" && sed "s@APP_VERSION@$VT@" misc/version.go.in > misc/version.go
+
+    - name: test
+      run: go version
+
+    - name: Build
+      run: GOOS=linux CGO_ENABLED=0 go build -ldflags="-s -w" -v -o nxs-backup
+
+    - name: Compress
+      run: tar -czvf uralm1-nxs-backup-amd64.tar.gz nxs-backup README.md LICENSE
+
+    - name: Compress1
+      uses: a7ul/tar-action@v1.2.0
+      id: compress
+      with:
+        command: c
+        files: |
+          ./nxs-backup
+          ./README.md
+          ./LICENSE
+        outPath: uralm1-nxs-backup-amd64-1.tar.gz
+
+    - name: ls
+      run: ls -l
+
+    #- uses: actions/upload-artifact@v4
+    #  with:
+    #    name: nxs-backup-${{ matrix.TARGET }}.tar.gz
+    #    path: nxs-backup-${{ matrix.TARGET }}.tar.gz
+
+    #- uses: softprops/action-gh-release@v2
+    #  name: Upload binaries to release
+    #  if: github.ref_type == 'tag'
+    #  with:
+    #    files: nxs-backup-${{ matrix.TARGET }}.tar.gz
+    #    prerelease: ${{ contains(github.ref_name, 'rc') }}
+    #    append_body: true
+

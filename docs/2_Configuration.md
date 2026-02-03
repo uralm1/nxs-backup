@@ -1,7 +1,5 @@
 ## 2. How to configure ##
 
-### 2.1. On premise ###
-
 After nxs-backup installation to a server, you need to generate configuration as the config does not
 appear automatically.
 nxs-backup configuration files are located in the /etc/nxs-backup/ directory by default.
