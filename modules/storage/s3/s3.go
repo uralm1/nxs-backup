@@ -109,7 +109,10 @@ func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, 
 		for _, bucketPath := range metadataRemPaths {
 			_, err = s.client.PutObject(context.Background(), s.bucketName, bucketPath,
 				metadataSrc, metadataSrcStat.Size(),
-				minio.PutObjectOptions{ContentType: "application/octet-stream"})
+				minio.PutObjectOptions{
+					ContentType:    "application/octet-stream",
+					SendContentMd5: true,
+				})
 			if err != nil {
 				return err
 			}

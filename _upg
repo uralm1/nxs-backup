@@ -9,3 +9,5 @@
 #go get github.com/vmware/go-nfs-client/nfs
 #go get github.com/vmware/go-nfs-client/nfs/rpc
 #go get github.com/pkg/sftp
+
+go get github.com/minio/minio-go/v7
