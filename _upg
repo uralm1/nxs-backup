@@ -3,7 +3,9 @@
 # waiting for go-multierror removal (has PR, not merged yet)
 #go get github.com/jlaffaye/ftp@6602e98
 
+# project abandoned, has critical panic fix PR, not merged
 #go get github.com/hirochachacha/go-smb2
+
 #go get github.com/vmware/go-nfs-client/nfs
 #go get github.com/vmware/go-nfs-client/nfs/rpc
 #go get github.com/pkg/sftp
