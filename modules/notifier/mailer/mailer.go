@@ -72,9 +72,8 @@ func (m *mailer) SendBuffer(log *logrus.Logger) {
 		return
 	}
 
-	var subj strings.Builder
+	var subj, body strings.Builder
 	subj.Grow(100)
-	var body strings.Builder
 	body.Grow(255)
 
 	var pn string

@@ -110,6 +110,12 @@ func CreateBodyLine(n logger.LogRecord) string {
 		sb.WriteString("WARNING")
 	case logrus.ErrorLevel:
 		sb.WriteString("ERROR")
+	case logrus.PanicLevel:
+		sb.WriteString("PANIC")
+	case logrus.FatalLevel:
+		sb.WriteString("FATAL")
+	case logrus.TraceLevel:
+		sb.WriteString("TRACE")
 	}
 
 	fmt.Fprintf(&sb, " [%s]", time.Now().Format("2006-01-02 15:04:05"))

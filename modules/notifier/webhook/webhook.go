@@ -12,11 +12,11 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/uralm1/nxs-backup/modules/logger"
+	"github.com/uralm1/nxs-backup/modules/notifier"
 )
 
 // Opts contains webhook options
@@ -32,30 +32,29 @@ type Opts struct {
 }
 
 type webhook struct {
-	opts      Opts
-	client    *http.Client
-	a_message string
-	lock      sync.Mutex
+	opts    Opts
+	client  *http.Client
+	message notifier.MessageBuffer
 }
 
-func (wh *webhook) CanCombineMessages() bool {
-	return false
+func (h *webhook) CanCombineMessages() bool {
+	return true
 }
 
 func Init(opts Opts) (*webhook, error) {
-	wh := &webhook{
+	h := &webhook{
 		opts: opts,
 	}
 
 	_, err := url.Parse(opts.WebhookURL)
 	if err != nil {
-		return wh, err
+		return h, err
 	}
 
 	d := &net.Dialer{
 		Timeout: 5 * time.Second,
 	}
-	wh.client = &http.Client{
+	h.client = &http.Client{
 		Transport: &http.Transport{
 			DialContext: d.DialContext,
 			//ResponseHeaderTimeout: 60 * time.Second,
@@ -65,52 +64,50 @@ func Init(opts Opts) (*webhook, error) {
 		},
 	}
 
-	return wh, nil
+	//allocate space and clear buffer
+	h.message.Init(h.opts.MessageLevel)
+
+	return h, nil
 }
 
-func (wh *webhook) ClearBuffer() {
-	wh.lock.Lock()
-	defer wh.lock.Unlock()
-	wh.clearBuffer_nolock()
+func (h *webhook) ClearBuffer() {
+	h.message.Clear()
 }
 
-func (wh *webhook) clearBuffer_nolock() {
-	wh.a_message = ""
+func (h *webhook) TakeEvent(log *logrus.Logger, n logger.LogRecord) {
+	h.message.FilterAndStore(n.Level, n.JobName, notifier.CreateBodyLine(n))
 }
 
-func (wh *webhook) TakeEvent(log *logrus.Logger, n logger.LogRecord) {
-	if n.Level > wh.opts.MessageLevel {
+func (h *webhook) SendBuffer(log *logrus.Logger) {
+	var jobs, b_msg string
+
+	if jobs, b_msg = h.message.RetriveAndClear(h.opts.MessageLevel); b_msg == "" {
+		//don't send anything if the buffer is empty or its level is not enough
 		return
 	}
 
-	wh.lock.Lock()
-	defer wh.lock.Unlock()
+	var m strings.Builder
+	m.Grow(255)
 
-	wh.a_message = wh.createMessage(n)
-}
-
-func (wh *webhook) SendBuffer(log *logrus.Logger) {
-	wh.lock.Lock()
-
-	//TODO if we implement buffered operation, we must check for empty buffer here and return
-	if wh.a_message == "" {
-		wh.lock.Unlock()
-		return
+	m.WriteString("Nxs-backup\n")
+	fmt.Fprintf(&m, "Server: %s\n", h.opts.ServerName)
+	if h.opts.ProjectName != "" {
+		fmt.Fprintf(&m, "Project: %s\n", h.opts.ProjectName)
 	}
+	if jobs != "" {
+		fmt.Fprintf(&m, "Job: %s\n", jobs)
+	}
+	m.WriteString("\n")
+	m.WriteString(b_msg)
 
-	msg_str := wh.a_message
-
-	wh.clearBuffer_nolock()
-	wh.lock.Unlock()
-
-	req, err := http.NewRequest(http.MethodPost, wh.opts.WebhookURL, bytes.NewBuffer(wh.getJsonData(log, msg_str)))
+	req, err := http.NewRequest(http.MethodPost, h.opts.WebhookURL, bytes.NewBuffer(h.getJsonData(log, m.String())))
 	if err != nil {
 		log.Errorf("Can't create webhook request: %v", err)
 		return
 	}
 	req.Header.Add("Content-Type", "application/json")
 
-	for k, v := range wh.opts.ExtraHeaders {
+	for k, v := range h.opts.ExtraHeaders {
 		if k == "Content-Type" {
 			continue
 		}
@@ -120,7 +117,7 @@ func (wh *webhook) SendBuffer(log *logrus.Logger) {
 		req.Header.Add(k, v)
 	}
 
-	resp, err := wh.client.Do(req)
+	resp, err := h.client.Do(req)
 	if err != nil {
 		log.Errorf("Request error: %v", err)
 		return
@@ -135,55 +132,11 @@ func (wh *webhook) SendBuffer(log *logrus.Logger) {
 	}
 }
 
-// createMessage generates notification message from event log record
-func (wh *webhook) createMessage(n logger.LogRecord) string {
-	if n.Message == "" {
-		return ""
-	}
-
-	var sb strings.Builder
-	sb.Grow(255)
-	switch n.Level {
-	case logrus.DebugLevel:
-		sb.WriteString("[DEBUG]")
-	case logrus.InfoLevel:
-		sb.WriteString("[INFO]")
-	case logrus.WarnLevel:
-		sb.WriteString("[WARNING]")
-	case logrus.ErrorLevel:
-		sb.WriteString("[ERROR]")
-	case logrus.PanicLevel:
-	case logrus.FatalLevel:
-	case logrus.TraceLevel:
-	}
-
-	if sb.Len() > 0 {
-		sb.WriteString("\n\n")
-	}
-
-	if wh.opts.ProjectName != "" {
-		fmt.Fprintf(&sb, "Project: %s\n", wh.opts.ProjectName)
-	}
-	if wh.opts.ServerName != "" {
-		fmt.Fprintf(&sb, "Server: %s\n\n", wh.opts.ServerName)
-	}
-
-	if n.JobName != "" {
-		fmt.Fprintf(&sb, "Job: %s\n", n.JobName)
-	}
-	if n.StorageName != "" {
-		fmt.Fprintf(&sb, "Storage: %s\n", n.StorageName)
-	}
-	fmt.Fprintf(&sb, "\nMessage: %s\n", n.Message)
-
-	return sb.String()
-}
-
-func (wh *webhook) getJsonData(log *logrus.Logger, message string) []byte {
+func (h *webhook) getJsonData(log *logrus.Logger, message string) []byte {
 	data := make(map[string]any)
 
-	data[wh.opts.PayloadMessageKey] = message
-	for k, v := range wh.opts.ExtraPayload {
+	data[h.opts.PayloadMessageKey] = message
+	for k, v := range h.opts.ExtraPayload {
 		data[k] = v
 	}
 
