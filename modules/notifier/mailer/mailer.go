@@ -8,14 +8,12 @@ import (
 	"io"
 	"os/exec"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 
-	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/logger"
+	"github.com/uralm1/nxs-backup/modules/notifier"
 )
 
 type Opts struct {
@@ -32,13 +30,8 @@ type Opts struct {
 }
 
 type mailer struct {
-	opts    Opts
-	message struct {
-		jobs         []string //strings: "job1, job2"
-		lines        []string
-		lowest_level logrus.Level //lowest level in all buffer, to determine send buffer or not
-		lock         sync.Mutex
-	}
+	opts       Opts
+	message    notifier.MessageBuffer
 	pass_level logrus.Level //highest level we accept into buffer
 }
 
@@ -57,65 +50,36 @@ func Init(mailCfg Opts) (*mailer, error) {
 		}
 		defer func() { _ = sc.Close() }()
 	}
-	//reserve space for 10 lines and one job
-	m.message.lines = make([]string, 0, 10)
-	m.message.jobs = make([]string, 0, 1)
 
+	//allocate space and clear buffer
+	m.message.Init()
+
+	//set pass_level
 	if m.opts.MessageLevel < logrus.DebugLevel {
 		m.pass_level = logrus.InfoLevel //Info,Error,Warn etc set to Info
 	} else {
 		m.pass_level = m.opts.MessageLevel //Debug,Trace set to Debug,Trace
 	}
-	m.message.lowest_level = logrus.TraceLevel //set to maximum level here
 
 	return m, nil
 }
 
 func (m *mailer) ClearBuffer() {
-	m.message.lock.Lock()
-	defer m.message.lock.Unlock()
-	m.clearBuffer_nolock()
-}
-
-func (m *mailer) clearBuffer_nolock() {
-	m.message.jobs = m.message.jobs[:0]
-	m.message.lines = m.message.lines[:0]
-	m.message.lowest_level = logrus.TraceLevel
+	m.message.Clear()
 }
 
 func (m *mailer) TakeEvent(log *logrus.Logger, n logger.LogRecord) {
 	if n.Level > m.pass_level {
 		return
 	}
-
-	m.message.lock.Lock()
-	defer m.message.lock.Unlock()
-
-	if n.Level < m.message.lowest_level {
-		m.message.lowest_level = n.Level
-	}
-
-	if n.JobName != "" {
-		if !misc.Contains(m.message.jobs, n.JobName) {
-			m.message.jobs = append(m.message.jobs, n.JobName)
-		}
-	}
-
-	m.message.lines = append(m.message.lines, m.createMailBodyLine(n))
+	m.message.Store(n.Level, n.JobName, notifier.CreateBodyLine(n))
 }
 
 func (m *mailer) SendBuffer(log *logrus.Logger) {
-	m.message.lock.Lock()
+	jobs, message := m.message.RetriveAndClear(m.opts.MessageLevel)
 
-	//don't send anything if the buffer is empty
-	if len(m.message.lines) == 0 {
-		m.message.lock.Unlock()
-		return
-	}
-	//drop buffer if its level is not enough
-	if m.message.lowest_level > m.opts.MessageLevel {
-		m.clearBuffer_nolock()
-		m.message.lock.Unlock()
+	//don't send anything if the buffer is empty or its level is not enough
+	if message == "" {
 		return
 	}
 
@@ -132,17 +96,14 @@ func (m *mailer) SendBuffer(log *logrus.Logger) {
 		fmt.Fprintf(&body, "Project: %s\n", m.opts.ProjectName)
 	}
 
-	if len(m.message.jobs) > 0 {
-		fmt.Fprintf(&subj, " %s", strings.Join(m.message.jobs, ", "))
-		fmt.Fprintf(&body, "Job: %s\n", strings.Join(m.message.jobs, ", "))
+	if jobs != "" {
+		fmt.Fprintf(&subj, " %s", jobs)
+		fmt.Fprintf(&body, "Job: %s\n", jobs)
 	}
 	fmt.Fprintf(&subj, " on %s%s", m.opts.ServerName, pn)
 
 	body.WriteString("\n")
-	body.WriteString(strings.Join(m.message.lines, "\n"))
-
-	m.clearBuffer_nolock()
-	m.message.lock.Unlock()
+	body.WriteString(message)
 
 	var sc gomail.SendCloser
 	var err error
@@ -169,32 +130,6 @@ func (m *mailer) SendBuffer(log *logrus.Logger) {
 	if err = gomail.Send(sc, msg); err != nil {
 		log.Errorf("Could not send email: %v", err)
 	}
-}
-
-func (m *mailer) createMailBodyLine(n logger.LogRecord) string {
-	var sb strings.Builder
-	sb.Grow(200)
-	switch n.Level {
-	case logrus.DebugLevel:
-		sb.WriteString("DEBUG")
-	case logrus.InfoLevel:
-		sb.WriteString("INFO")
-	case logrus.WarnLevel:
-		sb.WriteString("WARNING")
-	case logrus.ErrorLevel:
-		sb.WriteString("ERROR")
-	}
-
-	fmt.Fprintf(&sb, " [%s]", time.Now().Format("2006-01-02 15:04:05"))
-
-	if n.JobName != "" {
-		fmt.Fprintf(&sb, "[%s]", n.JobName)
-	}
-	if n.StorageName != "" {
-		fmt.Fprintf(&sb, "(%s)", n.StorageName)
-	}
-	fmt.Fprintf(&sb, " %s", n.Message)
-	return sb.String()
 }
 
 type localMail struct {
