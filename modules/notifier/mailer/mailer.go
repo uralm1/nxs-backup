@@ -30,9 +30,8 @@ type Opts struct {
 }
 
 type mailer struct {
-	opts       Opts
-	message    notifier.MessageBuffer
-	pass_level logrus.Level //highest level we accept into buffer
+	opts    Opts
+	message notifier.MessageBuffer
 }
 
 func (m *mailer) CanCombineMessages() bool {
@@ -52,14 +51,7 @@ func Init(mailCfg Opts) (*mailer, error) {
 	}
 
 	//allocate space and clear buffer
-	m.message.Init()
-
-	//set pass_level
-	if m.opts.MessageLevel < logrus.DebugLevel {
-		m.pass_level = logrus.InfoLevel //Info,Error,Warn etc set to Info
-	} else {
-		m.pass_level = m.opts.MessageLevel //Debug,Trace set to Debug,Trace
-	}
+	m.message.Init(m.opts.MessageLevel)
 
 	return m, nil
 }
@@ -69,17 +61,14 @@ func (m *mailer) ClearBuffer() {
 }
 
 func (m *mailer) TakeEvent(log *logrus.Logger, n logger.LogRecord) {
-	if n.Level > m.pass_level {
-		return
-	}
-	m.message.Store(n.Level, n.JobName, notifier.CreateBodyLine(n))
+	m.message.FilterAndStore(n.Level, n.JobName, notifier.CreateBodyLine(n))
 }
 
 func (m *mailer) SendBuffer(log *logrus.Logger) {
-	jobs, message := m.message.RetriveAndClear(m.opts.MessageLevel)
+	var jobs, b_msg string
 
-	//don't send anything if the buffer is empty or its level is not enough
-	if message == "" {
+	if jobs, b_msg = m.message.RetriveAndClear(m.opts.MessageLevel); b_msg == "" {
+		//don't send anything if the buffer is empty or its level is not enough
 		return
 	}
 
@@ -103,7 +92,7 @@ func (m *mailer) SendBuffer(log *logrus.Logger) {
 	fmt.Fprintf(&subj, " on %s%s", m.opts.ServerName, pn)
 
 	body.WriteString("\n")
-	body.WriteString(message)
+	body.WriteString(b_msg)
 
 	var sc gomail.SendCloser
 	var err error

@@ -16,10 +16,12 @@ type MessageBuffer struct {
 	lines        []string
 	lowest_level logrus.Level //lowest level in all buffer, to determine send buffer or not
 	lock         sync.Mutex
+	pass_level   logrus.Level //highest message level we accept to store into buffer
 }
 
-// allocate space and clear buffer
-func (buf *MessageBuffer) Init() {
+// allocate space, clear buffer and set pass_level
+// max_level - the level set in options
+func (buf *MessageBuffer) Init(max_level logrus.Level) {
 	buf.lock.Lock()
 	defer buf.lock.Unlock()
 
@@ -28,6 +30,13 @@ func (buf *MessageBuffer) Init() {
 	buf.jobs = make([]string, 0, 1)
 
 	buf.clear_nolock()
+
+	//set pass_level
+	if max_level < logrus.DebugLevel {
+		buf.pass_level = logrus.InfoLevel //Info,Error,Warn etc set to Info
+	} else {
+		buf.pass_level = max_level //Debug,Trace set to Debug,Trace
+	}
 }
 
 func (buf *MessageBuffer) Clear() {
@@ -42,7 +51,11 @@ func (buf *MessageBuffer) clear_nolock() {
 	buf.lowest_level = logrus.TraceLevel //set to maximum level here
 }
 
-func (buf *MessageBuffer) Store(level logrus.Level, job, line string) {
+func (buf *MessageBuffer) FilterAndStore(level logrus.Level, job, line string) {
+	if level > buf.pass_level {
+		return
+	}
+
 	buf.lock.Lock()
 	defer buf.lock.Unlock()
 
