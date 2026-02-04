@@ -89,7 +89,8 @@ func (h *webhook) SendBuffer(log *logrus.Logger) {
 	var m strings.Builder
 	m.Grow(255)
 
-	m.WriteString("Nxs-backup\n")
+	fmt.Fprintf(&m, "Nxs-backup [%s]\n", time.Now().Format("2006-01-02 15:04:05"))
+
 	fmt.Fprintf(&m, "Server: %s\n", h.opts.ServerName)
 	if h.opts.ProjectName != "" {
 		fmt.Fprintf(&m, "Project: %s\n", h.opts.ProjectName)
