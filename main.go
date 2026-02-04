@@ -35,14 +35,14 @@ func main() {
 	go handle_signals(c_sigh, wg, cancel_app)
 
 	wg.Add(2)
-	c_cmdh, cancel_cmdh := context.WithCancel(c_app)
-	defer cancel_cmdh()
+	c_cmdhandler, cancel_cmdhandler := context.WithCancel(c_app)
+	defer cancel_cmdhandler()
 	c_notification, cancel_notification := context.WithCancel(c_app)
 	defer cancel_notification()
 	//cmd_handler thread
 	go func() {
 		defer wg.Done()
-		cmd_handler.Runtime(appCtx, c_cmdh, cancel_app, cancel_notification)
+		cmd_handler.Runtime(appCtx, c_cmdhandler, cancel_app, cancel_notification)
 	}()
 	//notification thread
 	go func() {

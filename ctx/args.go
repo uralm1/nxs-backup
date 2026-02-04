@@ -41,7 +41,7 @@ type ServerCmd struct{}
 
 type GenerateCmd struct {
 	Type     misc.BackupType   `arg:"-T,--backup-type,required" help:"Type of backup"`
-	Storages map[string]string `arg:"-S,--storage-types" help:"Storages names with type. Example: -S minio=s3 aws=s3"`
+	Storages map[string]string `arg:"-S,--storage-types" help:"Storage names with type. Example: -S minio=s3 aws=s3"`
 	OutPath  string            `arg:"-O,--out-path" help:"Path to the generated configuration file" placeholder:"PATH"`
 }
 
@@ -50,7 +50,7 @@ type ListCmd struct {
 }
 
 type UpdateCmd struct {
-	Version string `arg:"-V,--set-version" help:"Use the specific version to update. Example: -V 3.2.0-rc0" default:"3"`
+	Version string `arg:"-V,--set-version" help:"Use specific version for an update. Example: -V 13.2.0-rc0" default:"13"`
 }
 
 type args struct {

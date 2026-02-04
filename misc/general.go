@@ -22,8 +22,10 @@ const (
 	YearlyBackupDay  = "1"
 	MonthlyBackupDay = "1"
 	WeeklyBackupDay  = "0"
-	LatestVersionURL = "https://github.com/uralm1/nxs-backup/releases/latest/download/nxs-backup"
-	VersionURL       = "https://github.com/uralm1/nxs-backup/releases/download/v"
+
+	DistributionFile = "ural-nxs-backup-" + runtime.GOARCH + ".tar.gz"
+	LatestVersionURL = "https://github.com/uralm1/nxs-backup/releases/latest/download/" + DistributionFile
+	VersionURL       = "https://github.com/uralm1/nxs-backup/releases/download/"
 
 	DiscFiles            BackupType = "files"
 	IncrFiles            BackupType = "incr_files"
@@ -149,9 +151,9 @@ func RandString(strLen int64) string {
 }
 
 // CheckNewVersionAvailable checks if new version is available
-func CheckNewVersionAvailable(ver string) (string, string, error) {
+func CheckNewVersionAvailable(major_ver string) ( /*newVer*/ string /*url*/, string, error) {
 	var url string
-	newVer, err := semver.NewVersion(ver)
+	newVer, err := semver.NewVersion(major_ver)
 	if err != nil {
 		return "", "", err
 	}
@@ -160,10 +162,13 @@ func CheckNewVersionAvailable(ver string) (string, string, error) {
 		return "", "", err
 	}
 
-	if ver != "3" {
-		url = VersionURL + newVer.String() + "/nxs-backup-" + runtime.GOARCH + ".tar.gz"
+	if major_ver != "13" {
+		//https://github.com/uralm1/nxs-backup/releases/download/4/ural-nxs-backup-amd64.tar.gz
+		url = VersionURL + newVer.String() + "/" + DistributionFile
 	} else {
-		url = LatestVersionURL + "-" + runtime.GOARCH + ".tar.gz"
+		//https://github.com/uralm1/nxs-backup/releases/latest/download/ural-nxs-backup-amd64.tar.gz
+		//-> moved to https://github.com/uralm1/nxs-backup/releases/download/13.xx/nxs-backup
+		url = LatestVersionURL
 	}
 
 	resp, err := http.Get(url)
@@ -176,7 +181,8 @@ func CheckNewVersionAvailable(ver string) (string, string, error) {
 		return "", "", fmt.Errorf("Failed to get new version from GitHub. Url: %s Status: %s ", url, resp.Status)
 	}
 
-	re := regexp.MustCompile(`v?(\d+\.\d+\.\d+(-[\w.]+)?)`)
+	//referer is: https://github.com/uralm1/nxs-backup/releases/download/13.14/ural-nxs-backup-amd64.tar.gz
+	re := regexp.MustCompile(`download/v?(\d+\.\d+(\.\d+(-[\w.]+)?)?)`)
 	matches := re.FindStringSubmatch(resp.Request.Header.Get("Referer"))
 
 	if len(matches) < 2 {
@@ -187,6 +193,7 @@ func CheckNewVersionAvailable(ver string) (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("error while parsing version: %v", err)
 	}
+	//fmt.Printf("Latest version: %v\n", newVer)
 
 	if curVer.LessThan(newVer) {
 		return newVer.String(), url, nil

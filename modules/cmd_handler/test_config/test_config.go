@@ -2,6 +2,7 @@ package test_config
 
 import (
 	"fmt"
+
 	"github.com/uralm1/nxs-backup/interfaces"
 )
 
@@ -34,7 +35,7 @@ func Init(o Opts) *testConfig {
 func (tc *testConfig) Run() {
 
 	if tc.initErr != nil {
-		fmt.Printf("The configuration have next errors:\n%v\n", tc.initErr)
+		fmt.Printf("The configuration has errors:\n%v\n", tc.initErr)
 	} else {
 		fmt.Printf("The configuration is correct\n\n")
 	}
@@ -48,20 +49,20 @@ func (tc *testConfig) Run() {
 		fmt.Println("No external jobs")
 	}
 	if len(tc.dbJobs) > 0 {
-		fmt.Println("List of databases jobs:")
+		fmt.Println("List of database jobs:")
 		for _, job := range tc.dbJobs {
 			fmt.Printf("  %s\n", job.GetName())
 		}
 	} else {
-		fmt.Println("No databases jobs")
+		fmt.Println("No database jobs")
 	}
 	if len(tc.fileJobs) > 0 {
-		fmt.Println("List of files jobs:")
+		fmt.Println("List of file jobs:")
 		for _, job := range tc.fileJobs {
 			fmt.Printf("  %s\n", job.GetName())
 		}
 	} else {
-		fmt.Println("No files jobs")
+		fmt.Println("No file jobs")
 	}
 	tc.done <- tc.initErr
 }

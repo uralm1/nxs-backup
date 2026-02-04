@@ -61,7 +61,7 @@ func (lb *listBackups) Run() {
 	}()
 
 	if lb.initErr != nil {
-		color.HiRed("[WARNING!] Backup plan initialized with errors:")
+		color.HiRed("[WARNING] Backup plan initialized with errors:")
 		fmt.Println(lb.initErr)
 	}
 
@@ -82,7 +82,7 @@ func (lb *listBackups) Run() {
 		errs = append(errs, err)
 	}
 	if len(errs) > 0 {
-		color.HiRed("[WARNING!] Execution finished with errors.")
+		color.HiRed("[WARNING] Execution finished with errors.")
 		err = misc.ErrExecution
 	}
 }

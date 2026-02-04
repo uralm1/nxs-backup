@@ -33,7 +33,7 @@ func (su *selfUpdate) Run() {
 
 	newVer, url, err := misc.CheckNewVersionAvailable(su.version)
 	if err != nil {
-		printSelfUpErr(su.done, err)
+		printUpdateErr(su.done, err)
 		return
 	}
 
@@ -42,10 +42,10 @@ func (su *selfUpdate) Run() {
 		su.done <- nil
 		return
 	}
-	fmt.Printf("The new version is: %s\n", newVer)
+	fmt.Printf("Found a new version: %s. Upgrading...\n", newVer)
 	exePath, err := os.Executable()
 	if err != nil {
-		printSelfUpErr(su.done, err)
+		printUpdateErr(su.done, err)
 		return
 	}
 	tarPath := exePath + ".tgz"
@@ -53,34 +53,34 @@ func (su *selfUpdate) Run() {
 
 	tarFile, err := os.Create(tarPath)
 	if err != nil {
-		printSelfUpErr(su.done, err)
+		printUpdateErr(su.done, err)
 		return
 	}
 	defer func() { _ = os.Remove(tarFile.Name()) }()
 
 	resp, err := http.Get(url)
 	if err != nil {
-		printSelfUpErr(su.done, err)
+		printUpdateErr(su.done, err)
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	_, err = io.Copy(tarFile, resp.Body)
 	if err != nil {
-		printSelfUpErr(su.done, err)
+		printUpdateErr(su.done, err)
 		return
 	}
 	defer func() { _ = tarFile.Close() }()
 
 	_, err = tarFile.Seek(0, 0)
 	if err != nil {
-		printSelfUpErr(su.done, err)
+		printUpdateErr(su.done, err)
 		return
 	}
 
 	gr, err := gzip.NewReader(tarFile)
 	if err != nil {
-		printSelfUpErr(su.done, err)
+		printUpdateErr(su.done, err)
 		return
 	}
 	defer func() { _ = gr.Close() }()
@@ -89,7 +89,7 @@ func (su *selfUpdate) Run() {
 
 	tmpBinFile, err = os.OpenFile(newExePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
-		printSelfUpErr(su.done, err)
+		printUpdateErr(su.done, err)
 		return
 	}
 	defer func() { _ = os.Remove(tmpBinFile.Name()) }()
@@ -100,13 +100,13 @@ func (su *selfUpdate) Run() {
 			break
 		}
 		if err != nil {
-			printSelfUpErr(su.done, err)
+			printUpdateErr(su.done, err)
 			return
 		}
-
-		if header.Name == "./nxs-backup" {
+		//fmt.Printf("header: %v\n", header.Name)
+		if header.Name == "nxs-backup" || header.Name == "./nxs-backup" {
 			if _, err = io.Copy(tmpBinFile, tr); err != nil {
-				printSelfUpErr(su.done, err)
+				printUpdateErr(su.done, err)
 				return
 			}
 			break
@@ -115,21 +115,21 @@ func (su *selfUpdate) Run() {
 
 	err = tmpBinFile.Close()
 	if err != nil {
-		printSelfUpErr(su.done, err)
+		printUpdateErr(su.done, err)
 		return
 	}
 
 	err = os.Rename(tmpBinFile.Name(), exePath)
 	if err != nil {
-		printSelfUpErr(su.done, err)
+		printUpdateErr(su.done, err)
 		return
 	}
 
-	fmt.Println("Update completed.")
+	fmt.Println("Update completed. Nxs-backup has been upgraded!")
 	su.done <- nil
 }
 
-func printSelfUpErr(dc chan error, err error) {
-	_, _ = fmt.Fprintf(os.Stderr, "Selfupdate failed: %v\n", err)
+func printUpdateErr(dc chan error, err error) {
+	_, _ = fmt.Fprintf(os.Stderr, "Self update failed: %v\n", err)
 	dc <- err
 }

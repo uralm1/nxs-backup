@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	"sync"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/uralm1/nxs-backup/modules/cmd_handler/list_backups"
+	"github.com/uralm1/nxs-backup/modules/cmd_handler/self_update"
 
 	"github.com/docker/go-units"
 	"github.com/sirupsen/logrus"
@@ -60,20 +63,20 @@ func AppCtxInit() (*Ctx, error) {
 
 	c.Log = &logrus.Logger{
 		Out:       os.Stderr,
-		Level:     logrus.InfoLevel,
-		Formatter: &logrus.TextFormatter{},
+		Level:     logrus.InfoLevel,       /*logrus.TraceLevel*/
+		Formatter: &logger.LogFormatter{}, /*&logrus.TextFormatter{}*/
 	}
 
 	switch ra.Cmd {
 	case update:
-		fmt.Fprintln(os.Stderr, "Self update is not supported in this fork of nxs-backup.")
-		return nil, errors.New("unsupported")
-		//c.Cmd = self_update.Init(
-		//	self_update.Opts{
-		//		Version: ra.CmdParams.(*UpdateCmd).Version,
-		//		Done:    c.Done,
-		//	},
-		//)
+		//fmt.Fprintln(os.Stderr, "Self update is not supported in this fork of nxs-backup.")
+		//return nil, errors.New("unsupported")
+		c.Cmd = self_update.Init(
+			self_update.Opts{
+				Version: ra.CmdParams.(*UpdateCmd).Version,
+				Done:    c.Done,
+			},
+		)
 
 	case generate:
 		if _, err = readConfig(ra.ConfigPath); err != nil {
@@ -200,12 +203,12 @@ func appInit(c *Ctx, cfgPath string) (app, error) {
 
 	if conf.Server.Metrics.Enabled {
 		nva := 0.0
-		// disabled in fork
-		//ver, _ := semver.NewVersion(misc.VERSION)
-		//newVer, _, _ := misc.CheckNewVersionAvailable(strconv.FormatUint(ver.Major(), 10))
-		//if newVer != "" {
-		//	nva = 1
-		//}
+
+		ver, _ := semver.NewVersion(misc.VERSION)
+		newVer, _, _ := misc.CheckNewVersionAvailable(strconv.FormatUint(ver.Major(), 10))
+		if newVer != "" {
+			nva = 1
+		}
 		a.metricsData.NewVersionAvailable = nva
 		a.metricsData.Enabled = true
 	}

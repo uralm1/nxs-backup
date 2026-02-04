@@ -65,13 +65,13 @@ type mailConf struct {
 }
 
 type webhookConf struct {
-	Enabled           bool                   `conf:"enabled" conf_extraopts:"default=true"`
-	WebhookURL        string                 `conf:"webhook_url" conf_extraopts:"required"`
-	PayloadMessageKey string                 `conf:"payload_message_key" conf_extraopts:"required"`
-	ExtraPayload      map[string]interface{} `conf:"extra_payload"`
-	ExtraHeaders      map[string]string      `conf:"extra_headers"`
-	InsecureTLS       bool                   `conf:"insecure_tls" conf_extraopts:"default=false"`
-	MessageLevel      string                 `conf:"message_level" conf_extraopts:"default=warn"`
+	Enabled           bool              `conf:"enabled" conf_extraopts:"default=true"`
+	WebhookURL        string            `conf:"webhook_url" conf_extraopts:"required"`
+	PayloadMessageKey string            `conf:"payload_message_key" conf_extraopts:"required"`
+	ExtraPayload      map[string]any    `conf:"extra_payload"`
+	ExtraHeaders      map[string]string `conf:"extra_headers"`
+	InsecureTLS       bool              `conf:"insecure_tls" conf_extraopts:"default=false"`
+	MessageLevel      string            `conf:"message_level" conf_extraopts:"default=warn"`
 }
 
 type jobConf struct {
@@ -79,7 +79,7 @@ type jobConf struct {
 	DeferredCopying bool            `conf:"deferred_copying" conf_extraopts:"default=false"`
 	Gzip            bool            `conf:"gzip" conf_extraopts:"default=false"`
 	Name            string          `conf:"job_name" conf_extraopts:"required"`
-	DumpCmd         string          `conf:"dump_cmd"` // used by external
+	DumpCmd         string          `conf:"dump_cmd"` // used in external
 	TmpDir          string          `conf:"tmp_dir"`
 	Type            misc.BackupType `conf:"type" conf_extraopts:"required"`
 	Limits          *limitsConf     `conf:"limits"`
