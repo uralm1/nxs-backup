@@ -2,11 +2,17 @@
 
 # waiting for go-multierror removal (has PR, not merged yet)
 #go get github.com/jlaffaye/ftp@6602e98
+# localized
 #go mod edit -replace github.com/jlaffaye/ftp@6602e98=./lib/ftp
 
-# project abandoned, has critical panic fix PR, not merged
-#go get github.com/hirochachacha/go-smb2
-#go mod edit -replace github.com/hirochachacha/go-smb2=./lib/go-smb2
+## project abandoned, has critical panic fix PR, not merged
+###go get github.com/hirochachacha/go-smb2
+###go mod edit -replace github.com/hirochachacha/go-smb2=./lib/go-smb2
+###go mod edit -dropreplace github.com/hirochachacha/go-smb2
+#
+# replaced by github.com/cloudsoda/go-smb2
+#go get github.com/cloudsoda/go-smb2
+
 
 #go get github.com/vmware/go-nfs-client/nfs
 #go get github.com/vmware/go-nfs-client/nfs/rpc

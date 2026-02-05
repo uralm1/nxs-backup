@@ -3,13 +3,12 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"os"
 	"os/signal"
-	"syscall"
-
-	"context"
 	"sync"
+	"syscall"
 
 	"github.com/uralm1/nxs-backup/ctx"
 	"github.com/uralm1/nxs-backup/misc"

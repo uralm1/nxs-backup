@@ -2,6 +2,7 @@ package smb
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -15,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hirochachacha/go-smb2"
+	"github.com/cloudsoda/go-smb2"
 
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
@@ -45,34 +46,6 @@ type Opts struct {
 	ConnectionTimeout time.Duration
 }
 
-func (s *SMB) connect_internal() error {
-	conn, err := net.DialTimeout(
-		"tcp",
-		fmt.Sprintf("%s:%d", s.conn_params.Host, s.conn_params.Port),
-		s.conn_params.ConnectionTimeout*time.Second,
-	)
-	if err != nil {
-		return err
-	}
-
-	s.session, err = (&smb2.Dialer{
-		Initiator: &smb2.NTLMInitiator{
-			User:     s.conn_params.User,
-			Password: s.conn_params.Password,
-			Domain:   s.conn_params.Domain,
-		},
-	}).Dial(conn)
-	if err != nil {
-		return err
-	}
-
-	s.share, err = s.session.Mount(s.conn_params.Share)
-	if err != nil {
-		return fmt.Errorf("mount: %w", err)
-	}
-	return nil
-}
-
 func Init(sName string, params Opts, rl int64) (s *SMB, err error) {
 	s = &SMB{
 		name:        sName,
@@ -84,6 +57,36 @@ func Init(sName string, params Opts, rl int64) (s *SMB, err error) {
 		return s, fmt.Errorf("Failed to init '%s' SMB storage. Error: %v", sName, err)
 	}
 	return
+}
+
+func (s *SMB) connect_internal() error {
+	address := fmt.Sprintf("%s:%d", s.conn_params.Host, s.conn_params.Port)
+
+	conn, err := net.DialTimeout("tcp", address,
+		s.conn_params.ConnectionTimeout*time.Second,
+	)
+	if err != nil {
+		return err
+	}
+
+	d := smb2.Dialer{
+		Initiator: &smb2.NTLMInitiator{
+			User:     s.conn_params.User,
+			Password: s.conn_params.Password,
+			Domain:   s.conn_params.Domain,
+		},
+	}
+
+	s.session, err = d.DialConn(context.Background(), conn, address)
+	if err != nil {
+		return err
+	}
+
+	s.share, err = s.session.Mount(s.conn_params.Share)
+	if err != nil {
+		return fmt.Errorf("mount: %w", err)
+	}
+	return nil
 }
 
 func (s *SMB) Configure(p Params) {
