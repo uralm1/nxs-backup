@@ -136,7 +136,10 @@ func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, 
 			logCh <- logger.Log(jobName, s.name).Errorf("Failed to reset file reader to start. Error: %v", err)
 			return err
 		}
-		res, err := s.client.PutObject(context.Background(), s.bucketName, bucketPath, source, sourceStat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
+		res, err := s.client.PutObject(context.Background(), s.bucketName, bucketPath, source, sourceStat.Size(),
+			minio.PutObjectOptions{
+				ContentType: "application/octet-stream",
+			})
 		if err != nil {
 			logCh <- logger.Log(jobName, s.name).Errorf("Failed to upload object '%s' to bucket %s. Error: %v", bucketPath, s.bucketName, err)
 			logCh <- logger.Log(jobName, s.name).Debugf("Response: %+v\n", res)
@@ -163,7 +166,8 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 
 	backupDir := path.Join(s.backupPath, ofs)
 
-	for object := range s.client.ListObjects(context.Background(), s.bucketName, minio.ListObjectsOptions{Recursive: true, Prefix: backupDir}) {
+	for object := range s.client.ListObjects(context.Background(), s.bucketName,
+		minio.ListObjectsOptions{Recursive: true, Prefix: backupDir}) {
 		if object.Err != nil {
 			logCh <- logger.Log(job.GetName(), s.name).Errorf("Failed get objects: '%s'", object.Err)
 			return object.Err
@@ -252,13 +256,15 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 	}()
 
 	if s.batchDeletion {
-		for err := range s.client.RemoveObjects(context.Background(), s.bucketName, objCh, minio.RemoveObjectsOptions{GovernanceBypass: true}) {
+		for err := range s.client.RemoveObjects(context.Background(), s.bucketName, objCh,
+			minio.RemoveObjectsOptions{GovernanceBypass: true}) {
 			logCh <- logger.Log(job.GetName(), s.name).Errorf("Error detected during multiple objects deletion: '%s'", err)
 			return err.Err
 		}
 	} else {
 		for object := range objCh {
-			if err := s.client.RemoveObject(context.Background(), s.bucketName, object.Key, minio.RemoveObjectOptions{GovernanceBypass: true}); err != nil {
+			if err := s.client.RemoveObject(context.Background(), s.bucketName, object.Key,
+				minio.RemoveObjectOptions{GovernanceBypass: true}); err != nil {
 				logCh <- logger.Log(job.GetName(), s.name).Errorf("Error detected during single object deletion: '%s'", err)
 				return err
 			}
@@ -298,7 +304,8 @@ func (s *S3) ListBackups(ofsPath string) ([]string, error) {
 	var fList []string
 	backupDir := path.Join(s.backupPath, ofsPath)
 
-	for object := range s.client.ListObjects(context.Background(), s.bucketName, minio.ListObjectsOptions{Recursive: true, Prefix: backupDir}) {
+	for object := range s.client.ListObjects(context.Background(), s.bucketName,
+		minio.ListObjectsOptions{Recursive: true, Prefix: backupDir}) {
 		if object.Err != nil {
 			return nil, object.Err
 		}

@@ -20,9 +20,9 @@ import (
 func main() {
 	var err error
 	var appCtx *ctx.Ctx
+	var wg sync.WaitGroup
 
 	c_app, cancel_app := context.WithCancelCause(context.Background())
-	wg := &sync.WaitGroup{}
 
 	appCtx, err = ctx.AppCtxInit()
 	if err != nil {
@@ -32,7 +32,7 @@ func main() {
 
 	c_sigh, cf := context.WithCancel(c_app)
 	defer cf()
-	go handle_signals(c_sigh, wg, cancel_app)
+	go handle_signals(c_sigh, &wg, cancel_app)
 
 	wg.Add(2)
 	c_cmdhandler, cancel_cmdhandler := context.WithCancel(c_app)
