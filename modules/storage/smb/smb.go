@@ -77,6 +77,7 @@ func (s *SMB) connect_internal() error {
 		},
 	}
 
+	//TODO: should we use context.WithTimeout here? Instead of DialTimeout().
 	s.session, err = d.DialConn(context.Background(), conn, address)
 	if err != nil {
 		return err

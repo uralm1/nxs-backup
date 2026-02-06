@@ -24,7 +24,7 @@ require (
 	github.com/prometheus/client_golang v1.20.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	github.com/vmware/go-nfs-client v0.0.0-20190605212624-d43b92724c1b
+	github.com/willscott/go-nfs-client v0.0.0-20251022144359-801f10d98886
 	go.mongodb.org/mongo-driver v1.16.1
 	golang.org/x/crypto v0.46.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df

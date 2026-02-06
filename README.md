@@ -1,9 +1,12 @@
-# nxs-backup (fork)
+# Nxs-backup (fork)
 
-nxs-backup is a tool for creating and delivery backups, rotating it locally and on remote storages, compatible with
+**Nxs-backup** is a tool for creating and delivery backups, rotating it locally and on remote storages, compatible with
 GNU/Linux distributions.
 
 ## Introduction
+
+[!NOTE]
+> Some configuration options have been **changed**, consider checking the updated [documentation pages](https://github.com/uralm1/nxs-backup/tree/my/docs).
 
 ### Features
 

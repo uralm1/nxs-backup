@@ -13,9 +13,12 @@
 # replaced by github.com/cloudsoda/go-smb2
 #go get github.com/cloudsoda/go-smb2
 
-
+# archived and abandoned
 #go get github.com/vmware/go-nfs-client/nfs
-#go get github.com/vmware/go-nfs-client/nfs/rpc
+#
+# replaced by github.com/willscott/go-nfs-client
+#go get github.com/willscott/go-nfs-client
+
 #go get github.com/pkg/sftp
 
 #go get github.com/minio/minio-go/v7

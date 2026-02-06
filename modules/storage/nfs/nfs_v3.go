@@ -12,10 +12,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vmware/go-nfs-client/nfs"
-	"github.com/vmware/go-nfs-client/nfs/rpc"
+	"github.com/willscott/go-nfs-client/nfs"
+	"github.com/willscott/go-nfs-client/nfs/rpc"
 
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
@@ -25,6 +26,7 @@ import (
 )
 
 type NFS struct {
+	mount         *nfs.Mount
 	target        *nfs.Target
 	name          string
 	backupPath    string
@@ -41,7 +43,7 @@ type Opts struct {
 }
 
 func Init(name string, params Opts, rl int64) (*NFS, error) {
-	mount, err := nfs.DialMount(params.Host)
+	mount, err := nfs.DialMount(params.Host, time.Second*5) //TODO timeout
 	if err != nil {
 		return nil, fmt.Errorf("Failed to init '%s' NFS storage. Dial MOUNT service error: %v ", name, err)
 	}
@@ -68,6 +70,7 @@ func Init(name string, params Opts, rl int64) (*NFS, error) {
 
 	return &NFS{
 		name:      name,
+		mount:     mount,
 		target:    target,
 		rateLimit: rl,
 	}, nil
@@ -395,7 +398,9 @@ func (n *NFS) listPaths(base string, fList []*nfs.EntryPlus) ([]string, error) {
 }
 
 func (n *NFS) Close() error {
-	return n.target.Close()
+	n.target.Close()
+	n.mount.Close()
+	return nil
 }
 
 func (n *NFS) Clone() interfaces.Storage {
