@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/uralm1/nxs-backup/ds/mongo_connect"
@@ -48,7 +49,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 			withStorageRate  bool
 			diskRate         int64
 			nrl              int64
-			stErrs           = 0
+			st_errs          = 0
 			err              error
 			jobStorages      interfaces.Storages
 		)
@@ -90,13 +91,13 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 			// storages validation
 			s, ok := o.storages[opt.StorageName]
 			if !ok {
-				stErrs++
+				st_errs++
 				errs = append(errs, fmt.Errorf("Failed to set storage `%s` for job `%s`: storage not available ", opt.StorageName, j.Name))
 				continue
 			}
 
 			if opt.Retention.Days < 0 || opt.Retention.Weeks < 0 || opt.Retention.Months < 0 {
-				stErrs++
+				st_errs++
 				errs = append(errs, fmt.Errorf("Failed to set storage `%s` for job `%s`: retention period can't be negative ", opt.StorageName, j.Name))
 				continue
 			}
@@ -136,7 +137,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 					Targets:     src.Targets,
 					Excludes:    src.Excludes,
 					SaveAbsPath: src.SaveAbsPath,
-					Gzip:        isGzip(src.Gzip, j.Gzip),
+					Gzip:        getGzipOrDefault(src.Gzip, j.Gzip),
 				})
 			}
 
@@ -161,7 +162,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 					Targets:     src.Targets,
 					Excludes:    src.Excludes,
 					SaveAbsPath: src.SaveAbsPath,
-					Gzip:        isGzip(src.Gzip, j.Gzip),
+					Gzip:        getGzipOrDefault(src.Gzip, j.Gzip),
 				})
 			}
 
@@ -186,7 +187,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 						User:     src.Connect.DBUser,
 						Passwd:   src.Connect.DBPassword,
 						Host:     src.Connect.DBHost,
-						Port:     src.Connect.DBPort,
+						Port:     getPortAsString(src.Connect.DBPort),
 						Socket:   src.Connect.Socket,
 						SSLCA:    src.Connect.SSLCA,
 						SSLCert:  src.Connect.SSLCert,
@@ -197,7 +198,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 					Excludes:  src.Excludes,
 					IsSlave:   src.IsSlave,
 					ExtraKeys: getExtraKeys(src.ExtraKeys),
-					Gzip:      isGzip(src.Gzip, j.Gzip),
+					Gzip:      getGzipOrDefault(src.Gzip, j.Gzip),
 				})
 			}
 
@@ -223,7 +224,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 						User:     src.Connect.DBUser,
 						Passwd:   src.Connect.DBPassword,
 						Host:     src.Connect.DBHost,
-						Port:     src.Connect.DBPort,
+						Port:     getPortAsString(src.Connect.DBPort),
 						Socket:   src.Connect.Socket,
 						SSLCA:    src.Connect.SSLCA,
 						SSLCert:  src.Connect.SSLCert,
@@ -235,7 +236,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 					IsSlave:   src.IsSlave,
 					Prepare:   src.PrepareXtrabackup,
 					ExtraKeys: getExtraKeys(src.ExtraKeys),
-					Gzip:      isGzip(src.Gzip, j.Gzip),
+					Gzip:      getGzipOrDefault(src.Gzip, j.Gzip),
 				})
 			}
 
@@ -261,7 +262,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 						User:        src.Connect.DBUser,
 						Passwd:      src.Connect.DBPassword,
 						Host:        src.Connect.DBHost,
-						Port:        src.Connect.DBPort,
+						Port:        getPortAsString(src.Connect.DBPort),
 						Socket:      src.Connect.Socket,
 						SSLMode:     src.Connect.PsqlSSLMode,
 						SSLRootCert: src.Connect.PsqlSSlRootCert,
@@ -272,7 +273,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 					Excludes:  src.Excludes,
 					IsSlave:   src.IsSlave,
 					ExtraKeys: getExtraKeys(src.ExtraKeys),
-					Gzip:      isGzip(src.Gzip, j.Gzip),
+					Gzip:      getGzipOrDefault(src.Gzip, j.Gzip),
 				})
 			}
 
@@ -297,7 +298,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 						User:        src.Connect.DBUser,
 						Passwd:      src.Connect.DBPassword,
 						Host:        src.Connect.DBHost,
-						Port:        src.Connect.DBPort,
+						Port:        getPortAsString(src.Connect.DBPort),
 						Socket:      src.Connect.Socket,
 						SSLMode:     src.Connect.PsqlSSLMode,
 						SSLRootCert: src.Connect.PsqlSSlRootCert,
@@ -306,7 +307,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 					Name:      src.Name,
 					IsSlave:   src.IsSlave,
 					ExtraKeys: getExtraKeys(src.ExtraKeys),
-					Gzip:      isGzip(src.Gzip, j.Gzip),
+					Gzip:      getGzipOrDefault(src.Gzip, j.Gzip),
 				})
 			}
 
@@ -331,7 +332,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 						User:      src.Connect.DBUser,
 						Passwd:    src.Connect.DBPassword,
 						Host:      src.Connect.DBHost,
-						Port:      src.Connect.DBPort,
+						Port:      getPortAsString(src.Connect.DBPort),
 						RSName:    src.Connect.MongoRSName,
 						RSAddr:    src.Connect.MongoRSAddr,
 						TLSCAFile: src.Connect.MongoTLSCAFile,
@@ -343,7 +344,7 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 					TargetCollections:  src.TargetCollections,
 					ExcludeDBs:         src.ExcludeDBs,
 					ExcludeCollections: src.ExcludeCollections,
-					Gzip:               isGzip(src.Gzip, j.Gzip),
+					Gzip:               getGzipOrDefault(src.Gzip, j.Gzip),
 				})
 			}
 
@@ -367,11 +368,11 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 					ConnectParams: redis_connect.Params{
 						Passwd: src.Connect.DBPassword,
 						Host:   src.Connect.DBHost,
-						Port:   src.Connect.DBPort,
+						Port:   getPortAsString(src.Connect.DBPort),
 						Socket: src.Connect.Socket,
 					},
 					Name: src.Name,
-					Gzip: isGzip(src.Gzip, j.Gzip),
+					Gzip: getGzipOrDefault(src.Gzip, j.Gzip),
 				})
 			}
 
@@ -415,11 +416,11 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 	return jobs, errors.Join(errs...)
 }
 
-func isGzip(sgz *bool, jgz bool) bool {
-	if sgz != nil {
-		return *sgz
+func getGzipOrDefault(gz_config *bool, gz_default bool) bool {
+	if gz_config != nil {
+		return *gz_config
 	} else {
-		return jgz
+		return gz_default
 	}
 }
 
@@ -437,4 +438,11 @@ func getExtraKeys(keys string) (eks []string) {
 	}
 
 	return
+}
+
+func getPortAsString(port int) string {
+	if port <= 0 {
+		return ""
+	}
+	return strconv.Itoa(port)
 }

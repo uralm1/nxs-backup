@@ -1,4 +1,4 @@
-# NXS-BACKUP (fork)
+# nxs-backup (fork)
 
 **Nxs-backup** is a tool for creating and delivery backups, rotating it locally and on remote storages, compatible with
 GNU/Linux distributions.

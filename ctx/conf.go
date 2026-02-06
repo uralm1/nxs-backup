@@ -105,7 +105,7 @@ type sourceConf struct {
 
 type sourceConnectConf struct {
 	DBHost          string `conf:"db_host"`
-	DBPort          string `conf:"db_port"`
+	DBPort          int    `conf:"db_port" conf_extraopts:"default=0"`
 	Socket          string `conf:"socket"`
 	DBUser          string `conf:"db_user"`
 	DBPassword      string `conf:"db_password"`
