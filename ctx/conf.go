@@ -21,7 +21,8 @@ type ConfOpts struct {
 	Notifications   notificationsConf    `conf:"notifications"`
 	Jobs            []jobConf            `conf:"jobs"`
 	StorageConnects []storageConnectConf `conf:"storage_connects"`
-	IncludeCfgs     []string             `conf:"include_jobs_configs"`
+	IncludeCfgs     []string             `conf:"include_job_configs"`
+	IncludeCfgs_    []string             `conf:"include_jobs_configs"`
 	WaitingTimeout  time.Duration        `conf:"waiting_timeout"`
 
 	Server serverConf  `conf:"server"`
@@ -225,6 +226,7 @@ func readConfig(confPath string) (ConfOpts, error) {
 
 	c.ConfPath = confPath
 
+	c.IncludeCfgs = append(c.IncludeCfgs, c.IncludeCfgs_...)
 	if len(c.IncludeCfgs) > 0 {
 		err = c.readExtraConfigs()
 		if err != nil {
@@ -342,7 +344,7 @@ storage_connects: []
 
 jobs: []
 
-include_jobs_configs: ["conf.d/*.conf"]
+include_job_configs: ["conf.d/*.conf"]
 
 logfile: /var/log/nxs-backup/nxs-backup.log
 `

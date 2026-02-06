@@ -23,7 +23,7 @@ notifications:
   webhooks: []
 storage_connects: []
 jobs: []
-include_jobs_configs: [ "conf.d/*.conf" ]
+include_job_configs: [ "conf.d/*.conf" ]
 ```
 
 You can generate a configuration file by running nxs-backup with the generate command and the options:
