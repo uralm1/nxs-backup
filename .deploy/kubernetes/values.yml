@@ -122,7 +122,7 @@ configMaps:
           - name: mysql
             connect:
               db_host: mysql
-              db_port: "3306"
+              db_port: 3306
               db_user: root
               db_password: rootP@5s
             target_dbs:
@@ -150,7 +150,7 @@ configMaps:
           - name: mysql_xtrabackup
             connect:
               db_host: mysql
-              db_port: "3306"
+              db_port: 3306
               db_user: root
               db_password: rootP@5s
             excludes:
@@ -174,7 +174,7 @@ configMaps:
           - name: psql
             connect:
               db_host: psql
-              db_port: "5432"
+              db_port: 5432
               psql_ssl_mode: require
               db_user: postgres
               db_password: postgresP@5s
@@ -200,7 +200,7 @@ configMaps:
           - name: psql_basebackup
             connect:
               db_host: psql
-              db_port: "5432"
+              db_port: 5432
               psql_ssl_mode: require
               db_user: repmgr
               db_password: repmgrP@5s
@@ -221,7 +221,7 @@ configMaps:
           - name: redis
             connect:
               db_host: redis
-              db_port: "6379"
+              db_port: 6379
               db_password: redisP@5s
             gzip: true
           storages_options:
@@ -240,7 +240,7 @@ configMaps:
           - name: mongodb
             connect:
               db_host: mongo1
-              db_port: "27017"
+              db_port: 27017
               db_user: mongo
               db_password: mongoP@5s
             target_dbs:
@@ -283,7 +283,7 @@ configMaps:
           - name: mysql
             connect:
               db_host: mysql
-              db_port: "3306"
+              db_port: 3306
               db_user: root
               db_password: rootP@5s
             target_dbs:

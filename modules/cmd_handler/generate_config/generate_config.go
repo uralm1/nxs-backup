@@ -44,7 +44,7 @@ type sourceYaml struct {
 type srcConnectYaml struct {
 	AuthFile       string        `yaml:"auth_file,omitempty"`
 	DBHost         string        `yaml:"db_host,omitempty"`
-	DBPort         string        `yaml:"db_port,omitempty"`
+	DBPort         int           `yaml:"db_port,omitempty"`
 	Socket         string        `yaml:"socket,omitempty"`
 	SSLMode        string        `yaml:"psql_ssl_mode,omitempty"`
 	DBUser         string        `yaml:"db_user,omitempty"`
@@ -210,7 +210,7 @@ func (gc *generateConfig) Run() {
 				Gzip: true,
 				Connect: srcConnectYaml{
 					DBHost:     "mysql",
-					DBPort:     "3306",
+					DBPort:     3306,
 					DBUser:     "root",
 					DBPassword: "rootP@5s",
 					Socket:     "",
@@ -235,7 +235,7 @@ func (gc *generateConfig) Run() {
 				Gzip: true,
 				Connect: srcConnectYaml{
 					DBHost:     "mysql",
-					DBPort:     "3306",
+					DBPort:     3306,
 					DBUser:     "root",
 					DBPassword: "rootP@5s",
 					Socket:     "",
@@ -257,7 +257,7 @@ func (gc *generateConfig) Run() {
 				Gzip: true,
 				Connect: srcConnectYaml{
 					DBHost:     "psql",
-					DBPort:     "5432",
+					DBPort:     5432,
 					DBUser:     "postgres",
 					DBPassword: "postgresP@5s",
 					Socket:     "",
@@ -279,7 +279,7 @@ func (gc *generateConfig) Run() {
 				Gzip: true,
 				Connect: srcConnectYaml{
 					DBHost:     "psql",
-					DBPort:     "5432",
+					DBPort:     5432,
 					DBUser:     "repmgr",
 					DBPassword: "repmgrP@5s",
 					Socket:     "",
@@ -296,7 +296,7 @@ func (gc *generateConfig) Run() {
 				Gzip: true,
 				Connect: srcConnectYaml{
 					DBHost:      "mongo1",
-					DBPort:      "27017",
+					DBPort:      27017,
 					DBUser:      "mongo",
 					DBPassword:  "mongoP@5s",
 					MongoRSName: "",
@@ -321,7 +321,7 @@ func (gc *generateConfig) Run() {
 				Gzip: true,
 				Connect: srcConnectYaml{
 					DBHost:     "redis",
-					DBPort:     "6379",
+					DBPort:     6379,
 					DBPassword: "redisP@5s",
 					Socket:     "",
 				},
