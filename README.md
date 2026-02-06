@@ -1,12 +1,12 @@
-# Nxs-backup (fork)
+# NXS-BACKUP (fork)
 
 **Nxs-backup** is a tool for creating and delivery backups, rotating it locally and on remote storages, compatible with
 GNU/Linux distributions.
 
 ## Introduction
 
-[!NOTE]
-> Some configuration options have been **changed**, consider checking the updated [documentation pages](https://github.com/uralm1/nxs-backup/tree/my/docs).
+> [!NOTE]
+> Some configuration options have been **changed** including job types, so consider checking the updated [documentation pages](https://github.com/uralm1/nxs-backup/tree/my/docs).
 
 ### Features
 
@@ -61,8 +61,8 @@ GNU/Linux distributions.
   ```sh
   sudo nxs-backup --version
   ```
-- Generate configuration files like described [here](https://nxs-backup.io/documentation/stable/2-3-1-on-premise/) or update
-  provided `nxs-backup.conf` and jobs configs in `cond.d` dir with your parameters (see [docs](https://nxs-backup.io/documentation/stable/3-1-preparing-of-the-main-config/) for details)
+- Generate configuration files like described [here](https://github.com/uralm1/nxs-backup/tree/my/docs/2_Configuration.md) or update
+  provided `nxs-backup.conf` and jobs configs in `cond.d` dir with your parameters (see [docs](https://github.com/uralm1/nxs-backup/tree/my/docs/3.1_Usage.md) for details)
 - For starting nxs-backup process run:
   ```sh
   sudo nxs-backup start
@@ -74,7 +74,7 @@ GNU/Linux distributions.
   ```sh
   cd nxs-backup/.deploy/docker-compose/
   ```
-- Update provided `nxs-backup.conf` file with your parameters (see [docs](https://nxs-backup.io/documentation/stable/3-1-preparing-of-the-main-config/) for details)
+- Update `nxs-backup.conf` file with your parameters (see [docs](https://github.com/uralm1/nxs-backup/tree/my/docs/3.1_Usage.md) for details)
 - Launch the nxs-backup with command:
   ```sh
   docker compose up -d --pull
@@ -91,7 +91,7 @@ GNU/Linux distributions.
   helm repo add nixys https://registry.nixys.io/chartrepo/public
   ```
 - Find examples of `helm values` [here](/docs/example/kubernetes/README.md)
-- Fill up your `values.yaml` with correct nxs-backup [configs](https://nxs-backup.io/documentation/stable/3-1-preparing-of-the-main-config/)
+- Fill up your `values.yaml` with correct nxs-backup [configs](https://github.com/uralm1/nxs-backup/tree/my/docs/3.1_Usage.md)
 - Launch nxs-backup with command:
   ```sh
   helm -n $NAMESPACE_SERVICE_NAME install nxs-backup nixys/nxs-universal-chart -f values.yaml
