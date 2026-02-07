@@ -171,14 +171,14 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 			continue
 		}
 
-		bakDir := path.Join(n.backupPath, ofsPart, p.String())
-		nfsFilesPlus, err := n.target.ReadDirPlus(bakDir)
+		backupDir := path.Join(n.backupPath, ofsPart, p.String())
+		nfsFilesPlus, err := n.target.ReadDirPlus(backupDir)
 		if err != nil {
 			if os.IsNotExist(err) {
-				logCh <- logger.Log(jobName, n.name).Debugf("Directory '%s' not exist. Skipping rotate.", bakDir)
+				logCh <- logger.Log(jobName, n.name).Debugf("Directory '%s' not exist. Skipping rotate.", backupDir)
 				continue
 			}
-			logCh <- logger.Log(jobName, n.name).Errorf("Failed to read files in remote directory '%s' with error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, n.name).Errorf("Failed to read files in remote directory '%s' with error: %s", backupDir, err)
 			return err
 		}
 
@@ -187,7 +187,7 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 			if file.Name() == ".." || file.Name() == "." {
 				continue
 			}
-			f, _, err := n.target.Lookup(path.Join(bakDir, file.Name()))
+			f, _, err := n.target.Lookup(path.Join(backupDir, file.Name()))
 			if err != nil {
 				logCh <- logger.Log(jobName, n.name).Errorf("Failed to read file '%s' with error: %s", file.Name(), err)
 				return err
@@ -224,13 +224,13 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 		}
 
 		for _, file := range nfsFiles {
-			err = n.target.Remove(path.Join(bakDir, file.Name()))
+			err = n.target.Remove(path.Join(backupDir, file.Name()))
 			if err != nil {
 				logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' in directory '%s' with error: %s",
-					file.Name(), bakDir, err)
+					file.Name(), backupDir, err)
 				errs = append(errs, err)
 			} else {
-				logCh <- logger.Log(jobName, n.name).Infof("Deleted old backup '%s' in directory '%s'", file.Name(), bakDir)
+				logCh <- logger.Log(jobName, n.name).Infof("Deleted old backup '%s' in directory '%s'", file.Name(), backupDir)
 			}
 		}
 	}

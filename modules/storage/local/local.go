@@ -169,26 +169,26 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 			continue
 		}
 
-		bakDir := path.Join(l.backupPath, ofsPart, p.String())
+		backupDir := path.Join(l.backupPath, ofsPart, p.String())
 
-		dir, err := os.Open(bakDir)
+		dir, err := os.Open(backupDir)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
-				logCh <- logger.Log(jobName, l.GetName()).Debugf("Backups directory `%s` not found. Continue.", bakDir)
+				logCh <- logger.Log(jobName, l.GetName()).Debugf("Backups directory `%s` not found. Continue.", backupDir)
 				continue
 			}
-			logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to open directory '%s' with error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to open directory '%s' with error: %s", backupDir, err)
 			return err
 		}
 
 		lFiles, err := dir.ReadDir(-1)
 		if err != nil {
-			logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to read files in directory '%s' with error: %s", bakDir, err)
+			logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to read files in directory '%s' with error: %s", backupDir, err)
 			return err
 		}
 
 		for _, file := range lFiles {
-			fPath := path.Join(bakDir, file.Name())
+			fPath := path.Join(backupDir, file.Name())
 			filesMap[fPath] = &fileLinks{}
 			if file.Type()&fs.ModeSymlink != 0 {
 				link, err := os.Readlink(fPath)
@@ -198,7 +198,7 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 					errs = append(errs, err)
 					continue
 				}
-				linkPath := filepath.Join(bakDir, link)
+				linkPath := filepath.Join(backupDir, link)
 
 				if fl, ok := filesMap[linkPath]; ok {
 					switch p {
@@ -246,10 +246,10 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 
 		for _, file := range lFiles {
 			if file.IsDir() {
-				logCh <- logger.Log(jobName, l.GetName()).Warnf("`%s` is directory in %s. Please check and remove it.", file.Name(), bakDir)
+				logCh <- logger.Log(jobName, l.GetName()).Warnf("`%s` is directory in %s. Please check and remove it.", file.Name(), backupDir)
 				continue
 			}
-			fPath := path.Join(bakDir, file.Name())
+			fPath := path.Join(backupDir, file.Name())
 			filesToDeleteMap[fPath] = filesMap[fPath]
 		}
 	}

@@ -60,7 +60,7 @@ func Init(sName string, params Opts, rl int64) (s *SMB, err error) {
 }
 
 func (s *SMB) connect_internal() error {
-	address := fmt.Sprintf("%s:%d", s.conn_params.Host, s.conn_params.Port)
+	address := net.JoinHostPort(s.conn_params.Host, strconv.Itoa(s.conn_params.Port))
 
 	conn, err := net.DialTimeout("tcp", address,
 		s.conn_params.ConnectionTimeout*time.Second,
@@ -190,7 +190,7 @@ func (s *SMB) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job 
 func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safe_rotation bool) error {
 	var errs []error
 
-	for _, p := range RetentionPeriodsList {
+	for _, p := range RetentionPeriodsList { //"monthly", "weekly", "daily"
 		retentionCount, retentionDate := GetRetention(p, s.Retention)
 		if retentionCount == 0 && retentionDate.IsZero() {
 			continue

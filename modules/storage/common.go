@@ -40,8 +40,15 @@ func (p retentionPeriod) String() string {
 	return string(p)
 }
 
+// retrives information from the retention setting (r) of a storage for a period "daily","weekly","monthly" (p)
+// returned:
+//
+//	retentionCount - same as retention setting of period asked,
+//	retentionDate - date calculated back from current date (see code)
+//
+// example: "daily: 7", today is 02.06, retentionDate is 01.31
 func GetRetention(p retentionPeriod, r Retention) (retentionCount int, retentionDate time.Time) {
-	curDate := time.Now().Round(24 * time.Hour)
+	curDate := time.Now().Truncate(24 * time.Hour)
 
 	switch p {
 	case Daily:
