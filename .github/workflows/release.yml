@@ -38,4 +38,5 @@ jobs:
       with:
         files: ural-nxs-backup-amd64.tar.gz
         prerelease: ${{ contains(github.ref_name, 'rc') }}
+        generate_release_notes: true
 
