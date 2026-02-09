@@ -122,9 +122,9 @@ func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 	return nil
 }
 
-func (s *SMB) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath string) (err error) {
+func (s *SMB) copy(logCh chan logger.LogRecord, job, src, dst string) (err error) {
 	// Make remote directories
-	remDir := path.Dir(dstPath)
+	remDir := path.Dir(dst)
 
 	//external backup could take a long time, so try to recreate
 	// destination directory to determine a connection timeout
@@ -136,42 +136,43 @@ func (s *SMB) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath string
 		if errors.As(err, &connection_err) && attempts > 1 {
 			s.Close()
 			if err_retr := s.connect_internal(); err_retr != nil {
-				logCh <- logger.Log(jobName, s.name).Errorf("Reconnection failed: '%s'", err_retr)
+				logCh <- logger.Log(job, s.name).Errorf("Reconnection failed: %s", err_retr)
 				//err = errors.Join(err, err_retr)
 			} else {
-				logCh <- logger.Log(jobName, s.name).Debugf("Reconnection succeeded")
+				logCh <- logger.Log(job, s.name).Debugf("Reconnection succeeded")
 				continue
 			}
 		}
 		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
+			logCh <- logger.Log(job, s.name).Errorf("Unable to create remote directory '%s': %s", remDir, err)
 			return
 		} else {
 			break
 		}
 	}
 
-	dstFile, err := s.share.Create(dstPath)
+	dstFile, err := s.share.Create(dst)
 	if err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote file: %s", err)
+		logCh <- logger.Log(job, s.name).Errorf("Unable to create remote file: %s", err)
 		return
 	}
 	defer func() { _ = dstFile.Close() }()
 
-	srcFile, err := files.GetLimitedFileReader(srcPath, s.rateLimit)
+	srcFile, err := files.GetLimitedFileReader(src, s.rateLimit)
 	if err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to open '%s'", err)
+		logCh <- logger.Log(job, s.name).Errorf("Unable to open: %s", err)
 		return
 	}
 	defer func() { _ = srcFile.Close() }()
 
 	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
-		logCh <- logger.Log(jobName, s.name).Errorf("Unable to make copy: %s", err)
-	} else {
-		logCh <- logger.Log(jobName, s.name).Infof("File %s was successfully uploaded", dstPath)
+		logCh <- logger.Log(job, s.name).Errorf("Unable to make copy: %s", err)
+		return
 	}
-	return
+
+	logCh <- logger.Log(job, s.name).Infof("File %s was successfully uploaded", dst)
+	return nil
 }
 
 func (s *SMB) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {

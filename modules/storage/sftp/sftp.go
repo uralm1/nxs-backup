@@ -103,66 +103,55 @@ func (s *SFTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile
 
 	if len(metadataDstPaths) > 0 { //this is actual only for incremental backup
 		for _, dstPath := range metadataDstPaths {
-			// Make remote directories
-			remDir := path.Dir(dstPath)
-			if err = s.client.MkdirAll(remDir); err != nil {
-				logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
+			if err = s.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
+				logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup (incremental)")
 				return
 			}
-
-			_ = s.client.Remove(dstPath)
-			metadataDst, err := s.client.Create(dstPath)
-			if err != nil {
-				return err
-			}
-			defer func() { _ = metadataDst.Close() }()
-
-			metadataSrc, err := files.GetLimitedFileReader(tmpBackupFile+".inc", s.rateLimit)
-			if err != nil {
-				return err
-			}
-			defer func() { _ = metadataSrc.Close() }()
-
-			_, err = io.Copy(metadataDst, metadataSrc)
-			if err != nil {
-				logCh <- logger.Log(jobName, s.name).Errorf("Unable to make copy: %s", err)
-				return err
-			}
-			logCh <- logger.Log(jobName, s.name).Infof("Successfully copied metadata to %s", dstPath)
 		}
 	}
 
 	for _, dstPath := range backupDstPaths {
-		// Make remote directories
-		remDir := path.Dir(dstPath)
-		if err = s.client.MkdirAll(remDir); err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
+		if err = s.copy(logCh, jobName, tmpBackupFile, dstPath); err != nil {
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
 			return
 		}
-
-		dstFile, err := s.client.Create(dstPath)
-		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to create remote file: %s", err)
-			return err
-		}
-		defer func() { _ = dstFile.Close() }()
-
-		srcFile, err := files.GetLimitedFileReader(tmpBackupFile, s.rateLimit)
-		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to open tmp backup: '%s'", err)
-			return err
-		}
-		defer func() { _ = srcFile.Close() }()
-
-		_, err = io.Copy(dstFile, srcFile)
-		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload file: %s", err)
-			return err
-		}
-		logCh <- logger.Log(jobName, s.name).Infof("File %s was successfully uploaded", dstFile.Name())
 	}
 
-	return
+	return nil
+}
+
+func (s *SFTP) copy(logCh chan logger.LogRecord, job, src, dst string) (err error) {
+	// Make remote directories
+	dstDir := path.Dir(dst)
+
+	if err = s.client.MkdirAll(dstDir); err != nil {
+		logCh <- logger.Log(job, s.name).Errorf("Unable to create remote directory '%s': %s", dstDir, err)
+		return
+	}
+
+	_ = s.client.Remove(dst)
+	dstFile, err := s.client.Create(dst)
+	if err != nil {
+		logCh <- logger.Log(job, s.name).Errorf("Unable to create remote file: %s", err)
+		return
+	}
+	defer func() { _ = dstFile.Close() }()
+
+	srcFile, err := files.GetLimitedFileReader(src, s.rateLimit)
+	if err != nil {
+		logCh <- logger.Log(job, s.name).Errorf("Unable to open: %s", err)
+		return
+	}
+	defer func() { _ = srcFile.Close() }()
+
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		logCh <- logger.Log(job, s.name).Errorf("Unable to make copy: %s", err)
+		return
+	}
+
+	logCh <- logger.Log(job, s.name).Infof("File %s was successfully uploaded", dst)
+	return nil
 }
 
 func (s *SFTP) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {

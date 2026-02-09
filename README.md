@@ -6,7 +6,7 @@ GNU/Linux distributions.
 ## Introduction
 
 > [!NOTE]
-> Some configuration options have been **changed** including job types, so consider checking the updated [documentation pages](https://github.com/uralm1/nxs-backup/tree/my/docs).
+> Some configuration options have been **changed** including job type names, so consider checking the updated [documentation pages](https://github.com/uralm1/nxs-backup/tree/my/docs).
 
 ### Features
 
@@ -40,13 +40,8 @@ GNU/Linux distributions.
   - remote storage rate
 
 ## Quickstart
-
-- Clone the repo
-  ```sh
-  git clone https://github.com/uralm1/nxs-backup.git
-  ```
   
-### On-premise (bare-metal or virtual machine)
+### Local installation (dedicated computer or virtual machine)
 
 - Install nxs-backup, just download and unpack archive for your CPU architecture.
   ```sh
@@ -57,19 +52,21 @@ GNU/Linux distributions.
   ```
 > [!NOTE]
 > If you need specific version of nxs-backup, or different architecture, you can find it on [release page](https://github.com/uralm1/nxs-backup/releases).
-- Check that installation successful:
+- Check that installation was successful:
   ```sh
   sudo nxs-backup --version
   ```
 - Generate configuration files like described [here](https://github.com/uralm1/nxs-backup/tree/my/docs/2_Configuration.md) or update
-  provided `nxs-backup.conf` and jobs configs in `cond.d` dir with your parameters (see [docs](https://github.com/uralm1/nxs-backup/tree/my/docs/3.1_Usage.md) for details)
-- For starting nxs-backup process run:
+  provided `nxs-backup.conf` and job configuration files in `conf.d` directory with your parameters (see [docs](https://github.com/uralm1/nxs-backup/tree/my/docs/3.1_Usage.md) for details)
+- To start nxs-backup jobs run:
   ```sh
   sudo nxs-backup start
   ```
 
 ### Docker-compose
 
+> [!NOTE]
+> There are no pregenerated docker images for this fork yet, you will need to build them yourself.  
 - Go to docker compose directory
   ```sh
   cd nxs-backup/.deploy/docker-compose/

@@ -102,6 +102,7 @@ func (f *FTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 	if len(metadataRemPaths) > 0 { //this is actual only for incremental backup
 		for _, dstPath := range metadataRemPaths {
 			if err := f.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
+				logCh <- logger.Log(jobName, f.name).Errorf("Unable to upload tmp backup (incremental)")
 				return err
 			}
 		}
@@ -109,6 +110,7 @@ func (f *FTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 
 	for _, dstPath := range backupRemPaths {
 		if err := f.copy(logCh, jobName, tmpBackupFile, dstPath); err != nil {
+			logCh <- logger.Log(jobName, f.name).Errorf("Unable to upload tmp backup")
 			return err
 		}
 	}
@@ -116,32 +118,32 @@ func (f *FTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 	return nil
 }
 
-func (f *FTP) copy(logCh chan logger.LogRecord, job, src, dst string) error {
-
+func (f *FTP) copy(logCh chan logger.LogRecord, job, src, dst string) (err error) {
 	// Make remote directories
 	dstDir := path.Dir(dst)
-	if err := f.mkDir(dstDir); err != nil {
-		logCh <- logger.Log(job, f.name).Errorf("Unable to create remote directory '%s': '%s'", dstDir, err)
-		return err
+	if err = f.mkDir(dstDir); err != nil {
+		logCh <- logger.Log(job, f.name).Errorf("Unable to create remote directory '%s': %s", dstDir, err)
+		return
 	}
 
 	srcFile, err := files.GetLimitedFileReader(src, f.rateLimit)
 	if err != nil {
-		logCh <- logger.Log(job, f.name).Errorf("Unable to open file: '%s'", err)
-		return err
+		logCh <- logger.Log(job, f.name).Errorf("Unable to open: %s", err)
+		return
 	}
 	defer func() { _ = srcFile.Close() }()
 
 	if err = f.updateConn(); err != nil {
-		return err
+		return
 	}
+
 	err = f.conn.Stor(dst, srcFile)
 	if err != nil {
 		logCh <- logger.Log(job, f.name).Errorf("Unable to upload file '%s'. Error: %s", dst, err)
-		return err
+		return
 	}
 
-	logCh <- logger.Log(job, f.name).Infof("Successfully uploaded file '%s'", dst)
+	logCh <- logger.Log(job, f.name).Infof("File %s was successfully uploaded", dst)
 	return nil
 }
 

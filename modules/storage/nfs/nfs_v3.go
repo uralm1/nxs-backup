@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/willscott/go-nfs-client/nfs"
 	"github.com/willscott/go-nfs-client/nfs/rpc"
 
@@ -92,6 +91,7 @@ func (n *NFS) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 	if len(metadataRemPaths) > 0 { //this is actual only for incremental backup
 		for _, dstPath := range metadataRemPaths {
 			if err := n.copy(logCh, jobName, dstPath, tmpBackupFile+".inc"); err != nil {
+				logCh <- logger.Log(jobName, n.name).Errorf("Unable to upload tmp backup (incremental)")
 				return err
 			}
 		}
@@ -99,6 +99,7 @@ func (n *NFS) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 
 	for _, dstPath := range backupRemPaths {
 		if err := n.copy(logCh, jobName, dstPath, tmpBackupFile); err != nil {
+			logCh <- logger.Log(jobName, n.name).Errorf("Unable to upload tmp backup")
 			return err
 		}
 	}
@@ -106,16 +107,11 @@ func (n *NFS) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile,
 	return nil
 }
 
-func (n *NFS) copy(logCh chan logger.LogRecord, jobName, dst, src string) error {
+func (n *NFS) copy(logCh chan logger.LogRecord, job, dst, src string) (err error) {
 	srcFile, err := files.GetLimitedFileReader(src, n.rateLimit)
 	if err != nil {
-		logCh <- logger.LogRecord{
-			Level:       logrus.ErrorLevel,
-			StorageName: n.name,
-			JobName:     jobName,
-			Message:     fmt.Sprintf("Unable to open file: '%s'", err),
-		}
-		return err
+		logCh <- logger.Log(job, n.name).Errorf("Unable to open: %s", err)
+		return
 	}
 	defer func() { _ = srcFile.Close() }()
 
@@ -123,29 +119,24 @@ func (n *NFS) copy(logCh chan logger.LogRecord, jobName, dst, src string) error 
 	dstDir := path.Dir(dst)
 	err = n.mkDir(dstDir)
 	if err != nil {
-		logCh <- logger.LogRecord{
-			Level:       logrus.ErrorLevel,
-			StorageName: n.name,
-			JobName:     jobName,
-			Message:     fmt.Sprintf("Unable to create remote directory '%s': '%s'", dstDir, err),
-		}
-		return err
+		logCh <- logger.Log(job, n.name).Errorf("Unable to create remote directory '%s': %s", dstDir, err)
+		return
 	}
 
-	destination, err := n.target.OpenFile(dst, 0666)
+	dstFile, err := n.target.OpenFile(dst, 0666)
 	if err != nil {
-		logCh <- logger.Log(jobName, n.name).Errorf("Unable to create destination file '%s': '%s'", dstDir, err)
-		return err
+		logCh <- logger.Log(job, n.name).Errorf("Unable to create destination file '%s': %s", dstDir, err)
+		return
 	}
-	defer func() { _ = destination.Close() }()
+	defer func() { _ = dstFile.Close() }()
 
-	_, err = io.Copy(destination, srcFile)
+	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
-		logCh <- logger.Log(jobName, n.name).Errorf("Unable to make copy '%s': '%s'", dstDir, err)
-		return err
+		logCh <- logger.Log(job, n.name).Errorf("Unable to make copy '%s': %s", dstDir, err)
+		return
 	}
-	logCh <- logger.Log(jobName, n.name).Infof("Successfully copied temp backup to %s", dst)
 
+	logCh <- logger.Log(job, n.name).Infof("Successfully copied temp backup to %s", dst)
 	return nil
 }
 
