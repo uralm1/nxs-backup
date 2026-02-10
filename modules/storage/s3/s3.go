@@ -158,7 +158,7 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 		return nil
 	}
 
-	curDate := time.Now().Round(24 * time.Hour)
+	curDate := time.Now().Truncate(24 * time.Hour)
 
 	objCh := make(chan minio.ObjectInfo)
 
