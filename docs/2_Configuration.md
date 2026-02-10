@@ -11,7 +11,7 @@ All configuration files are in YAML format.
 This is an example of an empty main config:
 
 /etc/nxs-backup/nxs-backup.conf
-```
+```yaml
 server_name: localhost
 project_name: My Best Project
 
@@ -27,9 +27,9 @@ include_job_configs: [ "conf.d/*.conf" ]
 ```
 
 You can generate a configuration file by running nxs-backup with the generate command and the options:
-```
--T [--backup-type] (required, backup type)
-```
+
+1. Backup type `-T [--backup-type] (required, backup type)`
+
 Available backup types:
 - files; 
 - incr_files;
@@ -42,9 +42,9 @@ Available backup types:
 - redis;
 - external.
 
-```
--S [--storage-types] (optional, space-separated list of storages according to the pattern <storage_name> =<storage_type>),
-```
+
+2. Storage `-S [--storage-types] (optional, space-separated list of storages according to the pattern <storage_name> =<storage_type>)`,
+
 Available remote storage types:
 - s3;
 - scp;
@@ -54,15 +54,15 @@ Available remote storage types:
 - ftp;
 - webdav.
 
-```
--O [--out-path] (optional, the path where the generated config should be saved)
-```
+
+3. Output `-O [--out-path] (optional, the path where the generated config should be saved)`
+
 This will generate a configuration file for the job and output the details. 
 
 For example, the next command will add an empty mysql backup job configuration file,
 located by path '/etc/nxs-backup/conf.d/mysql.conf' and add two remote storage connection parameters
 to the main config:
-```
+```sh
 $ sudo nxs-backup generate -T mysql -S aws=s3 dumps=scp
 nxs-backup: Successfully generated '/etc/nxs-backup/conf.d/mysql.conf' configuration file!
 ```
@@ -76,20 +76,20 @@ The next step is to fill up the generated configuration files. For details go to
 You can verify that the configuration is correct by running nxs-backup with the -t option.
 
 The program will process all configurations, display error messages if errors are found, and then exit:
-```
+```sh
 $ sudo nxs-backup -t
 The configuration is correct.
 ```
 
 If the main configuration file is located on another path, you can define it with the optional
-parameter -c/--config (the path to the main conf file).
+parameter `-c/--config (the path to the main conf file)`.
 
-To run nxs-backup on a regular schedule, you must add a call of nxs-backup to your crontab or cron.d.
+To run nxs-backup on a regular schedule, you must add a call of nxs-backup to your **crontab** or **cron.d**.
 
 This is an example of the cron file defining rules for Cron daemon to run nxs-backup by schedule.
 
 /etc/cron.d/nxs-backup
-```cron
+```crontab
 0 2 * * *       root    /usr/sbin/nxs-backup start all
 ```
 

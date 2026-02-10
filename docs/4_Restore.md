@@ -88,7 +88,7 @@ To restore file backups, you have to ensure that you have GNU tar of whatever ve
 Follow the usual rules for restoring from a GNU tar archive.
 
 Be careful: handling below replaces each file with its "counterpart" in the archive, so be sure what you do.
-```
+```sh
 sudo tar -xvpf /path/to/backup.tgz -C /
 ```
 
@@ -112,13 +112,13 @@ Annual copy (full-year backup) -> monthly copy -> decade copy -> daily copy
 
 1. Unpack the full-year copy with the following command:
 
-```
+```sh
 tar -xpGf /path/to/full/year/backup
 ```
 
 2. Then alternately unpack the monthly, decade, and daily incremental backups, specifying a special key -G:
 
-```
+```sh
 tar -xpGf /path/to/monthly/backup
 tar -xpGf /path/to/decade/backup
 tar -xpGf /path/to/day/backup
@@ -164,7 +164,7 @@ Example:
 └── databases [...]
 ```
 
-```
+```sh
 # Restore files to July 26 of 2023
 tar -xpGf /var/nxs-backups/files/inc/www/project0/2023/year/project0_2023-01-01_01-44.tar.gz -C /
 tar -xpGf /var/nxs-backups/files/inc/www/project0/2023/month_07/montly/project0_2023-07-01_01-45.tar.gz -C /
@@ -206,7 +206,7 @@ mysql> CREATE DATABASE production;
 3. Exit to OS shell
 
 4. Restore DB dump from OS shell:
-```
+```sh
 # syntax
 # mysql -u <username> -p <database_name> < /path/to/dump.sql
 # example
@@ -227,17 +227,17 @@ it using xtrabackup.
 Step-by-step instruction:
 
 1. Unarchive the backup to tmp directory:
-```
+```sh
 $ tar -xvf /var/nxs-backup/db/xtarbackup/production/daily/production_2022-07-08_02-12.tar.gz -C /var/nxs-backup/tmp/recover
 ```
 
 2. Prepare the backup for restoration. Skip this step if the option `prepare_xtrabackup` was enabled on backup creation.
-```
+```sh
 $ xtrabackup --prepare --target-dir=/var/nxs-backup/tmp/recover/
 ```
 
 3. Perform the recovery:
-```
+```sh
 $ xtrabackup --move-back --target-dir=/var/nxs-backup/tmp/recover/
 ```
 
@@ -252,7 +252,7 @@ In general, the recovery order will be following: uncompress the backup (if the 
 then restore it using the `psql` tool.
 
 Examples:
-```
+```sh
 # Basic example
 $ psql -h <psql_host> -U <psql_user> -W prod < /var/nxs-backup/db/psql12/prod/daily/psql12_prod_2022_07_31_01-01.sql
 # Decompress pipeline example
@@ -270,7 +270,7 @@ In general, the recovery order will be following: uncompress the backup (if the 
 then restore it using the `pg_restore` tool.
 
 Examples:
-```
+```sh
 # Decompress dump
 $ gunzip /var/nxs-backup/db/psql13/daily/psql13_2022_08_02_01-01.tar.gz
 # Restoration of full dump (if you a performed backups of all databases)
@@ -293,12 +293,12 @@ using the `mongorestore` tool.
 Step-by-step instruction:
 
 1. Extract the backup to tmp directory:
-```
+```sh
 $ tar -xvf /var/nxs-backup/db/mongo/production/prod/daily/prod_2022-09-02_02-12.tar.gz -C /var/nxs-backup/tmp/mongoresore
 ```
 
 2. Perform the recovery:
-```
+```sh
 # basic backup restore with collections drop
 $ mongorestore --drop --dir /var/nxs-backup/tmp/mongoresore/dump/prod
 
@@ -325,7 +325,7 @@ Step-by-step instruction:
 2. Change the Redis config `appendonly` flag to `no` (otherwise Redis will ignore your rdb file when it starts).
 
 3. Copy your backup rdb file to the Redis working directory (this is the dir option in your Redis config). Also, make sure your backup filename matches the `dbfilename` config option.
-```
+```sh
 $ gunzip /var/nxs-backup/db/redis/prod/daily/prod_2022-09-05_01-11.rdb.gz
 $ cp /var/nxs-backup/db/redis/prod/daily/prod_2022-09-05_01-11.rdb /var/lib/redis/dump.rdb   
 $ chmod 660 /var/lib/redis/dump.rdb
