@@ -138,7 +138,8 @@ func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, 
 		}
 		res, err := s.client.PutObject(context.Background(), s.bucketName, bucketPath, source, sourceStat.Size(),
 			minio.PutObjectOptions{
-				ContentType: "application/octet-stream",
+				ContentType:    "application/octet-stream",
+				SendContentMd5: true,
 			})
 		if err != nil {
 			logCh <- logger.Log(jobName, s.name).Errorf("Failed to upload object '%s' to bucket %s. Error: %v", bucketPath, s.bucketName, err)
