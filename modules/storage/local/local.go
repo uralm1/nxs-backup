@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dustin/go-humanize"
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/backend/files"
@@ -46,7 +47,7 @@ func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 	backupDstPath, metadataDstPath, links, err :=
 		GetBackupDstAndLinks(tmpBackupFile, ofs, l.backupPath, l.Retention, backupType)
 	if err != nil {
-		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to get destination path and links: '%s'", err)
+		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to get destination path and links: %s", err)
 		return
 	}
 
@@ -58,31 +59,31 @@ func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 
 	err = os.MkdirAll(path.Dir(backupDstPath), os.ModePerm)
 	if err != nil {
-		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to create directory: '%s'", err)
+		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to create directory: %s", err)
 		return err
 	}
 
 	if err = os.Rename(tmpBackupFile, backupDstPath); err != nil {
 		logCh <- logger.Log(jobName, l.GetName()).Debugf("Unable to move temp backup: %s", err)
 		err = nil
-		bakDst, err := os.Create(backupDstPath)
+		backupDst, err := os.Create(backupDstPath)
 		if err != nil {
 			return err
 		}
-		defer func() { _ = bakDst.Close() }()
+		defer func() { _ = backupDst.Close() }()
 
-		bakSrc, err := files.GetLimitedFileReader(tmpBackupFile, l.rateLimit)
+		backupSrc, err := files.GetLimitedFileReader(tmpBackupFile, l.rateLimit)
 		if err != nil {
 			return err
 		}
-		defer func() { _ = bakSrc.Close() }()
+		defer func() { _ = backupSrc.Close() }()
 
-		_, err = io.Copy(bakDst, bakSrc)
+		wr_bytes, err := io.Copy(backupDst, backupSrc)
 		if err != nil {
 			logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to make copy: %s", err)
 			return err
 		}
-		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully copied temp backup to %s", backupDstPath)
+		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully copied temp backup to %s (%s)", backupDstPath, humanize.Bytes(uint64(wr_bytes)))
 	} else {
 		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully moved temp backup to %s", backupDstPath)
 	}
@@ -90,7 +91,7 @@ func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 	for dst, src := range links {
 		err = os.MkdirAll(path.Dir(dst), os.ModePerm)
 		if err != nil {
-			logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to create directory: '%s'", err)
+			logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to create directory: %s", err)
 			return err
 		}
 		_ = os.Remove(dst)
@@ -108,14 +109,14 @@ func (l *Local) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpB
 
 	err := os.MkdirAll(path.Dir(metadataDstPath), os.ModePerm)
 	if err != nil {
-		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to create directory: '%s'", err)
+		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to create directory: %s", err)
 		return err
 	}
 
 	_ = os.Remove(metadataDstPath)
 
 	if err = os.Rename(metadataSrcPath, metadataDstPath); err != nil {
-		logCh <- logger.Log(jobName, l.GetName()).Debugf("Unable to move temp backup: %s", err)
+		logCh <- logger.Log(jobName, l.GetName()).Debugf("Unable to move incremental metadata file: %s", err)
 
 		metadataDst, err := os.Create(metadataDstPath)
 		if err != nil {
@@ -129,12 +130,12 @@ func (l *Local) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpB
 		}
 		defer func() { _ = metadataSrc.Close() }()
 
-		_, err = io.Copy(metadataDst, metadataSrc)
+		wr_bytes, err := io.Copy(metadataDst, metadataSrc)
 		if err != nil {
 			logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to make copy: %s", err)
 			return err
 		}
-		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully copied metadata to %s", metadataDstPath)
+		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully copied metadata to %s (%s)", metadataDstPath, humanize.Bytes(uint64(wr_bytes)))
 	} else {
 		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully moved metadata to %s", metadataDstPath)
 	}
@@ -246,7 +247,7 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 
 		for _, file := range lFiles {
 			if file.IsDir() {
-				logCh <- logger.Log(jobName, l.GetName()).Warnf("`%s` is directory in %s. Please check and remove it.", file.Name(), backupDir)
+				logCh <- logger.Log(jobName, l.GetName()).Warnf("`%s` is a directory in %s. Please remove it!", file.Name(), backupDir)
 				continue
 			}
 			fPath := path.Join(backupDir, file.Name())
@@ -316,7 +317,7 @@ func (l *Local) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 		backupDir := path.Join(l.backupPath, ofsPart)
 		if err := os.RemoveAll(backupDir); err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
-				logCh <- logger.Log(jobName, l.GetName()).Debugf("Directory '%s' not exist. Skipping delete.", backupDir)
+				logCh <- logger.Log(jobName, l.GetName()).Debugf("Directory '%s' does not exist. Skipping delete.", backupDir)
 				return nil
 			} else {
 				logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
@@ -340,7 +341,7 @@ func (l *Local) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 		dirs, err := os.ReadDir(backupDir)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
-				logCh <- logger.Log(jobName, l.GetName()).Debugf("Directory '%s' not exist. Skipping rotate.", backupDir)
+				logCh <- logger.Log(jobName, l.GetName()).Debugf("Directory '%s' does not exist. Skipping rotate.", backupDir)
 				return nil
 			} else {
 				logCh <- logger.Log(jobName, l.GetName()).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)

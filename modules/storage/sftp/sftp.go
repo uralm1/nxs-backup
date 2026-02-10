@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 
@@ -101,12 +102,11 @@ func (s *SFTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile
 	backupDstPaths, metadataDstPaths :=
 		GetBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
 
-	if len(metadataDstPaths) > 0 { //this is actual only for incremental backup
-		for _, dstPath := range metadataDstPaths {
-			if err = s.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
-				logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup (incremental)")
-				return
-			}
+	// len(metadataDstPaths) > 0 is actual only for incremental backup
+	for _, dstPath := range metadataDstPaths {
+		if err = s.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload incremental metadata file")
+			return
 		}
 	}
 
@@ -144,13 +144,13 @@ func (s *SFTP) copy(logCh chan logger.LogRecord, job, src, dst string) (err erro
 	}
 	defer func() { _ = srcFile.Close() }()
 
-	_, err = io.Copy(dstFile, srcFile)
+	wr_bytes, err := io.Copy(dstFile, srcFile)
 	if err != nil {
 		logCh <- logger.Log(job, s.name).Errorf("Unable to make copy: %s", err)
 		return
 	}
 
-	logCh <- logger.Log(job, s.name).Infof("File %s was successfully uploaded", dst)
+	logCh <- logger.Log(job, s.name).Infof("File %s was successfully uploaded (%s)", dst, humanize.Bytes(uint64(wr_bytes)))
 	return nil
 }
 

@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/willscott/go-nfs-client/nfs"
 	"github.com/willscott/go-nfs-client/nfs/rpc"
 
@@ -85,19 +86,18 @@ func (n *NFS) Configure(p Params) {
 func (n *NFS) IsLocal() int { return 0 }
 
 func (n *NFS) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) error {
-	backupRemPaths, metadataRemPaths :=
+	backupDstPaths, metadataDstPaths :=
 		GetBackupDstList(tmpBackupFile, ofs, n.backupPath, n.Retention, backupType)
 
-	if len(metadataRemPaths) > 0 { //this is actual only for incremental backup
-		for _, dstPath := range metadataRemPaths {
-			if err := n.copy(logCh, jobName, dstPath, tmpBackupFile+".inc"); err != nil {
-				logCh <- logger.Log(jobName, n.name).Errorf("Unable to upload tmp backup (incremental)")
-				return err
-			}
+	// len(metadataDstPaths) > 0 is actual only for incremental backup
+	for _, dstPath := range metadataDstPaths {
+		if err := n.copy(logCh, jobName, dstPath, tmpBackupFile+".inc"); err != nil {
+			logCh <- logger.Log(jobName, n.name).Errorf("Unable to upload incremental metadata file")
+			return err
 		}
 	}
 
-	for _, dstPath := range backupRemPaths {
+	for _, dstPath := range backupDstPaths {
 		if err := n.copy(logCh, jobName, dstPath, tmpBackupFile); err != nil {
 			logCh <- logger.Log(jobName, n.name).Errorf("Unable to upload tmp backup")
 			return err
@@ -130,13 +130,13 @@ func (n *NFS) copy(logCh chan logger.LogRecord, job, dst, src string) (err error
 	}
 	defer func() { _ = dstFile.Close() }()
 
-	_, err = io.Copy(dstFile, srcFile)
+	wr_bytes, err := io.Copy(dstFile, srcFile)
 	if err != nil {
 		logCh <- logger.Log(job, n.name).Errorf("Unable to make copy '%s': %s", dstDir, err)
 		return
 	}
 
-	logCh <- logger.Log(job, n.name).Infof("Successfully copied temp backup to %s", dst)
+	logCh <- logger.Log(job, n.name).Infof("File %s was successfully uploaded (%s)", dst, humanize.Bytes(uint64(wr_bytes)))
 	return nil
 }
 

@@ -72,12 +72,11 @@ func (wd *WebDav) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupF
 	backupDstPaths, metadataDstPaths :=
 		GetBackupDstList(tmpBackupFile, ofs, wd.backupPath, wd.Retention, backupType)
 
-	if len(metadataDstPaths) > 0 { //this is actual only for incremental backup
-		for _, dstPath := range metadataDstPaths {
-			if err = wd.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
-				logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload tmp backup (incremental)")
-				return
-			}
+	// len(metadataDstPaths) > 0 is actual only for incremental backup
+	for _, dstPath := range metadataDstPaths {
+		if err = wd.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
+			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload incremental metadata file")
+			return
 		}
 	}
 
@@ -91,29 +90,29 @@ func (wd *WebDav) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupF
 	return nil
 }
 
-func (wd *WebDav) copy(logCh chan logger.LogRecord, jobName, srcPath, dstPath string) (err error) {
+func (wd *WebDav) copy(logCh chan logger.LogRecord, job, src, dst string) (err error) {
 	// Make remote directories
-	remDir := path.Dir(dstPath)
+	remDir := path.Dir(dst)
 	if err = wd.mkDir(remDir); err != nil {
-		logCh <- logger.Log(jobName, wd.name).Errorf("Unable to create remote directory '%s': '%s'", remDir, err)
+		logCh <- logger.Log(job, wd.name).Errorf("Unable to create remote directory '%s': %s", remDir, err)
 		return
 	}
 
-	srcFile, err := files.GetLimitedFileReader(srcPath, wd.rateLimit)
+	srcFile, err := files.GetLimitedFileReader(src, wd.rateLimit)
 	if err != nil {
-		logCh <- logger.Log(jobName, wd.name).Errorf("Unable to open '%s'", err)
+		logCh <- logger.Log(job, wd.name).Errorf("Unable to open: %s", err)
 		return
 	}
 	defer func() { _ = srcFile.Close() }()
 
-	err = wd.client.Upload(dstPath, srcFile)
+	err = wd.client.Upload(dst, srcFile)
 	if err != nil {
-		logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload file: %s", err)
+		logCh <- logger.Log(job, wd.name).Errorf("Unable to upload file: %s", err)
 	} else {
-		logCh <- logger.Log(jobName, wd.name).Infof("File %s was successfull uploaded", dstPath)
+		logCh <- logger.Log(job, wd.name).Infof("File %s was successfull uploaded", dst)
 	}
 
-	return err
+	return
 }
 
 func (wd *WebDav) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {

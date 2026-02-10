@@ -96,19 +96,18 @@ func (f *FTP) updateConn() error {
 func (f *FTP) IsLocal() int { return 0 }
 
 func (f *FTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) error {
-	backupRemPaths, metadataRemPaths :=
+	backupDstPaths, metadataDstPaths :=
 		GetBackupDstList(tmpBackupFile, ofs, f.backupPath, f.Retention, backupType)
 
-	if len(metadataRemPaths) > 0 { //this is actual only for incremental backup
-		for _, dstPath := range metadataRemPaths {
-			if err := f.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
-				logCh <- logger.Log(jobName, f.name).Errorf("Unable to upload tmp backup (incremental)")
-				return err
-			}
+	// len(metadataDstPaths) > 0 is actual only for incremental backup
+	for _, dstPath := range metadataDstPaths {
+		if err := f.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
+			logCh <- logger.Log(jobName, f.name).Errorf("Unable to upload incremental metadata file")
+			return err
 		}
 	}
 
-	for _, dstPath := range backupRemPaths {
+	for _, dstPath := range backupDstPaths {
 		if err := f.copy(logCh, jobName, tmpBackupFile, dstPath); err != nil {
 			logCh <- logger.Log(jobName, f.name).Errorf("Unable to upload tmp backup")
 			return err

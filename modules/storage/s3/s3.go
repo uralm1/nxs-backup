@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
@@ -91,22 +92,24 @@ func (s *S3) Configure(p Params) {
 func (s *S3) IsLocal() int { return 0 }
 
 func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) error {
-	backupRemPaths, metadataRemPaths :=
+	backupDstPaths, metadataDstPaths :=
 		GetBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
 
-	if len(metadataRemPaths) > 0 { //this is actual only for incremental backup
-		metadataSrc, err := files.GetLimitedFileReader(tmpBackupFile+".inc", s.rateLimit)
+	if len(metadataDstPaths) > 0 { //len(metadataDstPaths) > 0 only for incremental backup
+		metadataSrcPath := tmpBackupFile + ".inc"
+
+		metadataSrc, err := files.GetLimitedFileReader(metadataSrcPath, s.rateLimit)
 		if err != nil {
 			return err
 		}
 		defer func() { _ = metadataSrc.Close() }()
 
-		metadataSrcStat, err := os.Stat(tmpBackupFile + ".inc")
+		metadataSrcStat, err := os.Stat(metadataSrcPath)
 		if err != nil {
 			return err
 		}
 
-		for _, bucketPath := range metadataRemPaths {
+		for _, bucketPath := range metadataDstPaths {
 			_, err = s.client.PutObject(context.Background(), s.bucketName, bucketPath,
 				metadataSrc, metadataSrcStat.Size(),
 				minio.PutObjectOptions{
@@ -116,9 +119,10 @@ func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, 
 			if err != nil {
 				return err
 			}
-			logCh <- logger.Log(jobName, s.name).Infof("Successfully uploaded object '%s' in bucket %s", bucketPath, s.bucketName)
+			logCh <- logger.Log(jobName, s.name).Infof("Successfully uploaded object '%s' to bucket %s (%s)", bucketPath, s.bucketName,
+				humanize.Bytes(uint64(metadataSrcStat.Size())))
 		}
-	}
+	} //incremental backup
 
 	source, err := files.GetLimitedFileReader(tmpBackupFile, s.rateLimit)
 	if err != nil {
@@ -131,7 +135,7 @@ func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, 
 		return err
 	}
 
-	for _, bucketPath := range backupRemPaths {
+	for _, bucketPath := range backupDstPaths {
 		if _, err = source.Seek(0, io.SeekStart); err != nil {
 			logCh <- logger.Log(jobName, s.name).Errorf("Failed to reset file reader to start. Error: %v", err)
 			return err
@@ -146,7 +150,8 @@ func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, 
 			logCh <- logger.Log(jobName, s.name).Debugf("Response: %+v\n", res)
 			return err
 		}
-		logCh <- logger.Log(jobName, s.name).Infof("Successfully uploaded object '%s' to bucket %s", bucketPath, s.bucketName)
+		logCh <- logger.Log(jobName, s.name).Infof("Successfully uploaded object '%s' to bucket %s (%s)", bucketPath, s.bucketName,
+			humanize.Bytes(uint64(sourceStat.Size())))
 	}
 
 	return nil

@@ -60,7 +60,7 @@ func DeleteTmpMysqlAuthFile(path string) error {
 	return os.RemoveAll(path)
 }
 
-func GetLimitedFileWriter(filePath string, rateLim int64) (io.WriteCloser, error) {
+func GetLimitedFileWriter(filePath string, rateLimit int64) (io.WriteCloser, error) {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return nil, err
@@ -69,8 +69,8 @@ func GetLimitedFileWriter(filePath string, rateLim int64) (io.WriteCloser, error
 	lwc := &limitedWriteCloser{
 		c: file,
 	}
-	if rateLim != 0 {
-		bucket := ratelimit.NewBucketWithRate(float64(rateLim), rateLim*2)
+	if rateLimit != 0 {
+		bucket := ratelimit.NewBucketWithRate(float64(rateLimit), rateLimit*2)
 		lwc.w = ratelimit.Writer(file, bucket)
 	} else {
 		lwc.w = file
@@ -79,7 +79,7 @@ func GetLimitedFileWriter(filePath string, rateLim int64) (io.WriteCloser, error
 	return lwc, nil
 }
 
-func GetLimitedFileReader(filePath string, rateLim int64) (*LimitedReadCloser, error) {
+func GetLimitedFileReader(filePath string, rateLimit int64) (*LimitedReadCloser, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -89,8 +89,8 @@ func GetLimitedFileReader(filePath string, rateLim int64) (*LimitedReadCloser, e
 		c: file,
 		s: file,
 	}
-	if rateLim != 0 {
-		bucket := ratelimit.NewBucketWithRate(float64(rateLim), rateLim*2)
+	if rateLimit != 0 {
+		bucket := ratelimit.NewBucketWithRate(float64(rateLimit), rateLimit*2)
 		lrc.r = ratelimit.Reader(file, bucket)
 	} else {
 		lrc.r = file
