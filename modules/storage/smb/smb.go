@@ -61,14 +61,7 @@ func Init(sName string, params Opts, rl int64) (s *SMB, err error) {
 }
 
 func (s *SMB) connect_internal() error {
-	address := net.JoinHostPort(s.conn_params.Host, strconv.Itoa(s.conn_params.Port))
-
-	conn, err := net.DialTimeout("tcp", address,
-		s.conn_params.ConnectionTimeout*time.Second,
-	)
-	if err != nil {
-		return err
-	}
+	var err error
 
 	d := smb2.Dialer{
 		Initiator: &smb2.NTLMInitiator{
@@ -78,8 +71,11 @@ func (s *SMB) connect_internal() error {
 		},
 	}
 
-	//TODO: should we use context.WithTimeout here? Instead of DialTimeout().
-	s.session, err = d.DialConn(context.Background(), conn, address)
+	ctx, cancel := context.WithTimeout(context.Background(), s.conn_params.ConnectionTimeout*time.Second)
+	defer cancel()
+
+	address := net.JoinHostPort(s.conn_params.Host, strconv.Itoa(s.conn_params.Port))
+	s.session, err = d.Dial(ctx, address)
 	if err != nil {
 		return err
 	}
