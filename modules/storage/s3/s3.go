@@ -163,7 +163,10 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 		return nil
 	}
 
-	curDate := time.Now().Truncate(24 * time.Hour)
+	// set curDate to the beginning of local DAY
+	t := time.Now()
+	year, month, day := t.Date()
+	curDate := time.Date(year, month, day, 0, 0, 0, 0, t.Location())
 
 	objCh := make(chan minio.ObjectInfo)
 

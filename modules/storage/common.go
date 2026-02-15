@@ -7,6 +7,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/uralm1/nxs-backup/misc"
@@ -40,7 +43,7 @@ func (p retentionPeriod) String() string {
 	return string(p)
 }
 
-// retrives information from the retention setting (r) of a storage for a period "daily","weekly","monthly" (p)
+// GetRetention() retrives information from the retention setting (r) of a storage for a period "daily","weekly","monthly" (p)
 // returned:
 //
 //	retentionCount - same as retention setting of period asked,
@@ -48,7 +51,10 @@ func (p retentionPeriod) String() string {
 //
 // example: "daily: 7", today is 02.06, retentionDate is 01.31
 func GetRetention(p retentionPeriod, r Retention) (retentionCount int, retentionDate time.Time) {
-	curDate := time.Now().Truncate(24 * time.Hour)
+	// set curDate to the beginning of local DAY
+	t := time.Now()
+	year, month, day := t.Date()
+	curDate := time.Date(year, month, day, 0, 0, 0, 0, t.Location())
 
 	switch p {
 	case Daily:
@@ -69,6 +75,8 @@ func GetRetention(p retentionPeriod, r Retention) (retentionCount int, retention
 		}
 		retentionCount = r.Months
 		retentionDate = curDate.AddDate(0, -r.Months, 1)
+	default:
+		panic("Bad period")
 	}
 	return
 }
@@ -286,4 +294,48 @@ func getIBackupDstList(tmpBackupFile, ofs, backupPath string) (backupDst, metada
 	}
 
 	return
+}
+
+type RotateFileInfo struct {
+	name    string
+	modtime time.Time
+}
+
+type RotateFiles []RotateFileInfo
+
+// DSelectFilesToDelete() takes list of files (RotateFiles structure) and returns list of file names that should be deleted
+// retention_date, retention_count, safe_rotation are decision making parameters
+func DSelectFilesToDelete(files RotateFiles, retention_date time.Time, retention_count int, safe_rotation bool) (names []string) {
+	files = slices.DeleteFunc(files, func(f RotateFileInfo) bool {
+		if f.name == ".." || f.name == "." || !(strings.HasSuffix(f.name, ".tar") || strings.HasSuffix(f.name, ".tar.gz")) {
+			return true
+		}
+		return false
+	})
+
+	if retention_count > 0 {
+		sort.Slice(files, func(i, j int) bool {
+			return files[i].modtime.Before(files[j].modtime)
+		})
+
+		if !safe_rotation {
+			retention_count--
+		}
+		if retention_count <= len(files) {
+			for _, f := range files[:len(files)-retention_count] {
+				names = append(names, f.name)
+			}
+		} //else { names = []string{} }
+	} else if !retention_date.IsZero() {
+		for _, f := range files {
+			if f.modtime.Location() != retention_date.Location() {
+				retention_date = retention_date.In(f.modtime.Location())
+			}
+
+			if f.modtime.Before(retention_date) {
+				names = append(names, f.name)
+			}
+		}
+	}
+	return //names
 }
