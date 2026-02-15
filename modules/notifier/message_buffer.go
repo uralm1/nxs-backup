@@ -72,7 +72,7 @@ func (buf *MessageBuffer) FilterAndStore(level logrus.Level, job, line string) {
 	buf.lines = append(buf.lines, line)
 }
 
-// check the level and return comma separated jobs and buffered multiline message
+// RetriveAndClear() checks the level and returns comma separated jobs and buffered multiline message
 // if buffer is empty or its level is not enough, return "" in message
 func (buf *MessageBuffer) RetriveAndClear(max_level logrus.Level) (jobs, message string) {
 	buf.lock.Lock()
@@ -102,6 +102,8 @@ func CreateBodyLine(n logger.LogRecord) string {
 	var sb strings.Builder
 	sb.Grow(200)
 	switch n.Level {
+	case logrus.TraceLevel:
+		sb.WriteString("TRACE")
 	case logrus.DebugLevel:
 		sb.WriteString("DEBUG")
 	case logrus.InfoLevel:
@@ -110,12 +112,10 @@ func CreateBodyLine(n logger.LogRecord) string {
 		sb.WriteString("WARNING")
 	case logrus.ErrorLevel:
 		sb.WriteString("ERROR")
-	case logrus.PanicLevel:
-		sb.WriteString("PANIC")
 	case logrus.FatalLevel:
 		sb.WriteString("FATAL")
-	case logrus.TraceLevel:
-		sb.WriteString("TRACE")
+	case logrus.PanicLevel:
+		sb.WriteString("PANIC")
 	}
 
 	fmt.Fprintf(&sb, " [%s]", time.Now().Format("2006-01-02 15:04:05"))

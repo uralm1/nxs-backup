@@ -303,9 +303,9 @@ type RotateFileInfo struct {
 
 type RotateFiles []RotateFileInfo
 
-// DSelectFilesToDelete() takes list of files (RotateFiles structure) and returns list of file names that should be deleted
+// DRotationFiles() takes list of files (RotateFiles structure) and returns list of file names that should be deleted
 // retention_date, retention_count, safe_rotation are decision making parameters
-func DSelectFilesToDelete(files RotateFiles, retention_date time.Time, retention_count int, safe_rotation bool) (names []string) {
+func DRotationFiles(files RotateFiles, retention_date time.Time, retention_count int, use_count, safe_rotation bool) (names []string) {
 	files = slices.DeleteFunc(files, func(f RotateFileInfo) bool {
 		if f.name == ".." || f.name == "." || !(strings.HasSuffix(f.name, ".tar") || strings.HasSuffix(f.name, ".tar.gz")) {
 			return true
@@ -313,19 +313,25 @@ func DSelectFilesToDelete(files RotateFiles, retention_date time.Time, retention
 		return false
 	})
 
-	if retention_count > 0 {
-		sort.Slice(files, func(i, j int) bool {
-			return files[i].modtime.Before(files[j].modtime)
-		})
+	if use_count {
+		if retention_count > 0 {
+			sort.Slice(files, func(i, j int) bool {
+				return files[i].modtime.Before(files[j].modtime)
+			})
 
-		if !safe_rotation {
-			retention_count--
-		}
-		if retention_count <= len(files) {
-			for _, f := range files[:len(files)-retention_count] {
+			if !safe_rotation {
+				retention_count--
+			}
+			if retention_count <= len(files) {
+				for _, f := range files[:len(files)-retention_count] {
+					names = append(names, f.name)
+				}
+			} //else { names = []string{} }
+		} else if retention_count == 0 {
+			for _, f := range files {
 				names = append(names, f.name)
 			}
-		} //else { names = []string{} }
+		}
 	} else if !retention_date.IsZero() {
 		for _, f := range files {
 			if f.modtime.Location() != retention_date.Location() {

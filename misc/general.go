@@ -92,11 +92,13 @@ func GetDateTimeNow(unit string) (res string) {
 		res = strconv.Itoa(currentTime.Year())
 	case "previous_year": //2025
 		res = strconv.Itoa(currentTime.Year() - 1)
-	default: //2026-01-22_16-41
+	case "": //2026-01-22_16-41
 		res = currentTime.Format("2006-01-02_15-04")
+	default:
+		panic("Bad unit")
 	}
 
-	return res
+	return //res
 }
 
 func GetDecadeDaySubdir() (decadeDay string) {
@@ -111,14 +113,14 @@ func GetDecadeDaySubdir() (decadeDay string) {
 	return
 }
 
-func GetFileFullPath(dirPath, baseName, baseExtension, prefix string, gZip bool) (fullPath string) {
+func GetFileFullPath(dirPath, baseName, baseExtension, prefix string, gzip bool) (fullPath string) {
 	fileName := fmt.Sprintf("%s_%s.%s", baseName, GetDateTimeNow(""), baseExtension)
 
 	if prefix != "" {
 		fileName = fmt.Sprintf("%s-%s", prefix, fileName)
 	}
 
-	if gZip {
+	if gzip {
 		fileName += ".gz"
 	}
 
@@ -127,7 +129,7 @@ func GetFileFullPath(dirPath, baseName, baseExtension, prefix string, gZip bool)
 	return fullPath
 }
 
-// Contains checks if a string is present in a slice
+// Contains() checks if a string is present in a slice
 func Contains(s []string, str string) bool {
 	for _, v := range s {
 		if v == str {
