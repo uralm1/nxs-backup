@@ -9,7 +9,6 @@ import (
 	"net/textproto"
 	"path"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -187,49 +186,23 @@ func (f *FTP) deleteDiscBackup(logCh chan logger.LogRecord, job, ofsPart string,
 			return err
 		}
 
-		if f.Retention.UseCount {
-			sort.Slice(ftpFiles, func(i, j int) bool {
-				return ftpFiles[i].Time.Before(ftpFiles[j].Time)
-			})
-
-			if !safe_rotation {
-				retentionCount--
-			}
-			if retentionCount <= len(ftpFiles) {
-				ftpFiles = ftpFiles[:len(ftpFiles)-retentionCount]
-			} else {
-				ftpFiles = ftpFiles[:0]
-			}
-		} else {
-			i := 0
-			for _, file := range ftpFiles {
-				if file.Time.Location() != retentionDate.Location() {
-					retentionDate = retentionDate.In(file.Time.Location())
-				}
-
-				if file.Time.Before(retentionDate) {
-					ftpFiles[i] = file
-					i++
-				}
-			}
-			ftpFiles = ftpFiles[:i]
-		}
-
+		objs := NewRotationObjects(len(ftpFiles))
 		for _, file := range ftpFiles {
-			if file.Name == ".." || file.Name == "." {
-				continue
-			}
+			objs.AddObject(file.Name, file.Time)
+		}
+		r_files := DGetRotatedObjects(objs, retentionCount, retentionDate, f.Retention.UseCount, safe_rotation)
 
+		for _, file := range r_files {
 			if err = f.updateConn(); err != nil {
 				return err
 			}
-			err = f.conn.Delete(path.Join(backupDir, file.Name))
+			err = f.conn.Delete(path.Join(backupDir, file))
 			if err != nil {
 				logCh <- logger.Log(job, f.name).Errorf("Failed to delete file '%s' in remote directory '%s' with error: %s",
-					file.Name, backupDir, err)
+					file, backupDir, err)
 				errs = append(errs, err)
 			} else {
-				logCh <- logger.Log(job, f.name).Infof("Deleted old backup file '%s' in remote directory '%s'", file.Name, backupDir)
+				logCh <- logger.Log(job, f.name).Infof("Deleted old backup file '%s' in remote directory '%s'", file, backupDir)
 			}
 		}
 	}

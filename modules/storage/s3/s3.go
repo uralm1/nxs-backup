@@ -14,7 +14,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/minio/minio-go/v7"
@@ -164,9 +163,7 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 	}
 
 	// set curDate to the beginning of local DAY
-	t := time.Now()
-	year, month, day := t.Date()
-	curDate := time.Date(year, month, day, 0, 0, 0, 0, t.Location())
+	curDate := misc.GetBeginningOfThisDay()
 
 	objCh := make(chan minio.ObjectInfo)
 

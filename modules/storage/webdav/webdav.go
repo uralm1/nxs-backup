@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -147,42 +146,20 @@ func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart
 			return err
 		}
 
-		if wd.Retention.UseCount {
-			sort.Slice(wdFiles, func(i, j int) bool {
-				return wdFiles[i].ModTime().Before(wdFiles[j].ModTime())
-			})
-
-			if !safe_rotation {
-				retentionCount--
-			}
-			if retentionCount <= len(wdFiles) {
-				wdFiles = wdFiles[:len(wdFiles)-retentionCount]
-			} else {
-				wdFiles = wdFiles[:0]
-			}
-		} else {
-			i := 0
-			for _, file := range wdFiles {
-				if file.ModTime().Location() != retentionDate.Location() {
-					retentionDate = retentionDate.In(file.ModTime().Location())
-				}
-
-				if file.ModTime().Before(retentionDate) {
-					wdFiles[i] = file
-					i++
-				}
-			}
-			wdFiles = wdFiles[:i]
-		}
-
+		objs := NewRotationObjects(len(wdFiles))
 		for _, file := range wdFiles {
-			err = wd.client.Rm(path.Join(backupDir, file.Name()))
+			objs.AddObject(file.Name(), file.ModTime())
+		}
+		r_files := DGetRotatedObjects(objs, retentionCount, retentionDate, wd.Retention.UseCount, safe_rotation)
+
+		for _, file := range r_files {
+			err = wd.client.Rm(path.Join(backupDir, file))
 			if err != nil {
 				logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete file '%s' in directory '%s' with error: %s",
-					file.Name(), backupDir, err)
+					file, backupDir, err)
 				errs = append(errs, err)
 			} else {
-				logCh <- logger.Log(jobName, wd.name).Infof("Deleted old backup file '%s' in directory '%s'", file.Name(), backupDir)
+				logCh <- logger.Log(jobName, wd.name).Infof("Deleted old backup file '%s' in directory '%s'", file, backupDir)
 			}
 		}
 	}

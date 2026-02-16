@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -186,40 +185,14 @@ func (s *SFTP) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart st
 			return err
 		}
 
-		if s.Retention.UseCount {
-			sort.Slice(files, func(i, j int) bool {
-				return files[i].ModTime().Before(files[j].ModTime())
-			})
-
-			if !safe_rotation {
-				retentionCount--
-			}
-			if retentionCount <= len(files) {
-				files = files[:len(files)-retentionCount]
-			} else {
-				files = files[:0]
-			}
-		} else {
-			i := 0
-			for _, file := range files {
-				if file.ModTime().Location() != retentionDate.Location() {
-					retentionDate = retentionDate.In(file.ModTime().Location())
-				}
-
-				if file.ModTime().Before(retentionDate) {
-					files[i] = file
-					i++
-				}
-			}
-			files = files[:i]
-		}
-
+		objs := NewRotationObjects(len(files))
 		for _, file := range files {
-			if file.Name() == ".." || file.Name() == "." {
-				continue
-			}
+			objs.AddObject(file.Name(), file.ModTime())
+		}
+		r_files := DGetRotatedObjects(objs, retentionCount, retentionDate, s.Retention.UseCount, safe_rotation)
 
-			f_path := path.Join(backupDir, file.Name())
+		for _, file := range r_files {
+			f_path := path.Join(backupDir, file)
 			if err := s.client.Remove(f_path); err != nil {
 				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with error: %s", f_path, err)
 				errs = append(errs, err)

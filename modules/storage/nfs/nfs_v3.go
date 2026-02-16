@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -186,42 +185,20 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 			nfsFiles = append(nfsFiles, f)
 		}
 
-		if n.Retention.UseCount {
-			sort.Slice(nfsFiles, func(i, j int) bool {
-				return nfsFiles[i].ModTime().Before(nfsFiles[j].ModTime())
-			})
-
-			if !safe_rotation {
-				retentionCount--
-			}
-			if retentionCount <= len(nfsFiles) {
-				nfsFiles = nfsFiles[:len(nfsFiles)-retentionCount]
-			} else {
-				nfsFiles = nfsFiles[:0]
-			}
-		} else {
-			i := 0
-			for _, file := range nfsFiles {
-				if file.ModTime().Location() != retentionDate.Location() {
-					retentionDate = retentionDate.In(file.ModTime().Location())
-				}
-
-				if file.ModTime().Before(retentionDate) {
-					nfsFiles[i] = file
-					i++
-				}
-			}
-			nfsFiles = nfsFiles[:i]
-		}
-
+		objs := NewRotationObjects(len(nfsFiles))
 		for _, file := range nfsFiles {
-			err = n.target.Remove(path.Join(backupDir, file.Name()))
+			objs.AddObject(file.Name(), file.ModTime())
+		}
+		r_files := DGetRotatedObjects(objs, retentionCount, retentionDate, n.Retention.UseCount, safe_rotation)
+
+		for _, file := range r_files {
+			err = n.target.Remove(path.Join(backupDir, file))
 			if err != nil {
 				logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' in directory '%s' with error: %s",
-					file.Name(), backupDir, err)
+					file, backupDir, err)
 				errs = append(errs, err)
 			} else {
-				logCh <- logger.Log(jobName, n.name).Infof("Deleted old backup '%s' in directory '%s'", file.Name(), backupDir)
+				logCh <- logger.Log(jobName, n.name).Infof("Deleted old backup '%s' in directory '%s'", file, backupDir)
 			}
 		}
 	}

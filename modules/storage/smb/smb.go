@@ -11,7 +11,6 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -203,40 +202,14 @@ func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 			return err
 		}
 
-		if s.Retention.UseCount {
-			sort.Slice(smbFiles, func(i, j int) bool {
-				return smbFiles[i].ModTime().Before(smbFiles[j].ModTime())
-			})
-
-			if !safe_rotation {
-				retentionCount--
-			}
-			if retentionCount <= len(smbFiles) {
-				smbFiles = smbFiles[:len(smbFiles)-retentionCount]
-			} else {
-				smbFiles = smbFiles[:0]
-			}
-		} else {
-			i := 0
-			for _, file := range smbFiles {
-				if file.ModTime().Location() != retentionDate.Location() {
-					retentionDate = retentionDate.In(file.ModTime().Location())
-				}
-
-				if file.ModTime().Before(retentionDate) {
-					smbFiles[i] = file
-					i++
-				}
-			}
-			smbFiles = smbFiles[:i]
-		}
-
+		objs := NewRotationObjects(len(smbFiles))
 		for _, file := range smbFiles {
-			if file.Name() == ".." || file.Name() == "." {
-				continue
-			}
+			objs.AddObject(file.Name(), file.ModTime())
+		}
+		r_files := DGetRotatedObjects(objs, retentionCount, retentionDate, s.Retention.UseCount, safe_rotation)
 
-			f_path := path.Join(backupDir, file.Name())
+		for _, file := range r_files {
+			f_path := path.Join(backupDir, file)
 			if err := s.share.Remove(f_path); err != nil {
 				logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete file '%s' with error: %s", f_path, err)
 				errs = append(errs, err)

@@ -9,7 +9,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -213,44 +212,19 @@ func (l *Local) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart s
 			}
 		}
 
-		if l.Retention.UseCount {
-			sort.Slice(lFiles, func(i, j int) bool {
-				iInfo, _ := lFiles[i].Info()
-				jInfo, _ := lFiles[j].Info()
-				return iInfo.ModTime().Before(jInfo.ModTime())
-			})
-
-			if !safe_rotation {
-				retentionCount--
-			}
-
-			if retentionCount <= len(lFiles) {
-				lFiles = lFiles[:len(lFiles)-retentionCount]
-			} else {
-				lFiles = lFiles[:0]
-			}
-		} else {
-			i := 0
-			for _, file := range lFiles {
-				fileInfo, _ := file.Info()
-				if fileInfo.ModTime().Location() != retentionDate.Location() {
-					retentionDate = retentionDate.In(fileInfo.ModTime().Location())
-				}
-
-				if fileInfo.ModTime().Before(retentionDate) {
-					lFiles[i] = file
-					i++
-				}
-			}
-			lFiles = lFiles[:i]
-		}
-
+		objs := NewRotationObjects(len(lFiles))
 		for _, file := range lFiles {
 			if file.IsDir() {
 				logCh <- logger.Log(jobName, l.GetName()).Warnf("`%s` is a directory in %s. Please remove it!", file.Name(), backupDir)
 				continue
 			}
-			fPath := path.Join(backupDir, file.Name())
+			file_info, _ := file.Info()
+			objs.AddObject(file.Name(), file_info.ModTime())
+		}
+		r_files := DGetRotatedObjects(objs, retentionCount, retentionDate, l.Retention.UseCount, safe_rotation)
+
+		for _, file := range r_files {
+			fPath := path.Join(backupDir, file)
 			filesToDeleteMap[fPath] = filesMap[fPath]
 		}
 	}
