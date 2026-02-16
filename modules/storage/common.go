@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,10 +45,9 @@ func (p retentionPeriod) String() string {
 }
 
 // GetRetention() retrives information from the retention setting (r) of a storage for a period "daily","weekly","monthly" (p)
-// returned:
-//
-//	retentionCount - same as retention setting of period asked,
-//	retentionDate - date calculated back from current date (see code)
+// returns:
+// retentionCount - same as retention setting of period asked,
+// retentionDate - date calculated back from current date (see code)
 //
 // example: "daily: 7", today is 02.06, retentionDate is 01.31
 func GetRetention(p retentionPeriod, r Retention) (retentionCount int, retentionDate time.Time) {
@@ -74,6 +74,24 @@ func GetRetention(p retentionPeriod, r Retention) (retentionCount int, retention
 		retentionDate = curDate.AddDate(0, -r.Months, 1)
 	default:
 		panic("Bad period")
+	}
+	return
+}
+
+// GetRetentionLastMonthAndYear() calculates last month and year for IBackup rotation purposes
+// returns:
+// lastMonth - (curernt month - retention months setting)
+// yearStr - year as string corresonding the lastMonth
+// BUG WARNING: only valid for year+previous year period!!!
+func GetRetentionLastMonthAndYear(r Retention) (lastMonth int, yearStr string) {
+	cur := time.Now()
+	lastMonth = int(cur.Month()) - r.Months
+
+	if lastMonth > 0 {
+		yearStr = strconv.Itoa(cur.Year())
+	} else {
+		yearStr = strconv.Itoa(cur.Year() - 1)
+		lastMonth += 12
 	}
 	return
 }

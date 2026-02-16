@@ -179,17 +179,7 @@ func (wd *WebDav) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart
 			errs = append(errs, err)
 		}
 	} else {
-		intMoy, _ := strconv.Atoi(misc.GetDateTimeNow("moy"))
-		lastMonth := intMoy - wd.Months
-
-		var year string
-		if lastMonth > 0 {
-			year = misc.GetDateTimeNow("year")
-		} else {
-			year = misc.GetDateTimeNow("previous_year")
-			lastMonth += 12
-		}
-
+		lastMonth, year := GetRetentionLastMonthAndYear(wd.Retention)
 		backupDir := path.Join(wd.backupPath, ofsPart, year)
 
 		dirs, err := wd.client.Ls(backupDir)

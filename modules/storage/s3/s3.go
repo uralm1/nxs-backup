@@ -183,16 +183,8 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 			if full {
 				filesList["inc"] = append(filesList["inc"], object)
 			} else {
-				intMoy, _ := strconv.Atoi(misc.GetDateTimeNow("moy"))
-				lastMonth := intMoy - s.Months
+				lastMonth, year := GetRetentionLastMonthAndYear(s.Retention)
 
-				var year string
-				if lastMonth > 0 {
-					year = misc.GetDateTimeNow("year")
-				} else {
-					year = misc.GetDateTimeNow("previous_year")
-					lastMonth += 12
-				}
 				rx := regexp.MustCompile(year + "/month_\\d\\d")
 				if rx.MatchString(object.Key) {
 					dirParts := strings.Split(path.Base(object.Key), "_")

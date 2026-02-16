@@ -218,17 +218,7 @@ func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 			errs = append(errs, err)
 		}
 	} else {
-		intMoy, _ := strconv.Atoi(misc.GetDateTimeNow("moy"))
-		lastMonth := intMoy - n.Months
-
-		var year string
-		if lastMonth > 0 {
-			year = misc.GetDateTimeNow("year")
-		} else {
-			year = misc.GetDateTimeNow("previous_year")
-			lastMonth += 12
-		}
-
+		lastMonth, year := GetRetentionLastMonthAndYear(n.Retention)
 		backupDir := path.Join(n.backupPath, ofsPart, year)
 
 		dirs, err := n.target.ReadDirPlus(backupDir)

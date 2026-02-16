@@ -234,17 +234,7 @@ func (f *FTP) deleteIncrBackup(logCh chan logger.LogRecord, job, ofsPart string,
 			errs = append(errs, err)
 		}
 	} else {
-		intMoy, _ := strconv.Atoi(misc.GetDateTimeNow("moy"))
-		lastMonth := intMoy - f.Months
-
-		var year string
-		if lastMonth > 0 {
-			year = misc.GetDateTimeNow("year")
-		} else {
-			year = misc.GetDateTimeNow("previous_year")
-			lastMonth += 12
-		}
-
+		lastMonth, year := GetRetentionLastMonthAndYear(f.Retention)
 		backupDir := path.Join(f.backupPath, ofsPart, year)
 
 		dirs, err := f.conn.List(backupDir)

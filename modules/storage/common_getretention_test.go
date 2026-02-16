@@ -146,3 +146,40 @@ func TestGetRetentionMonthly(t *testing.T) {
 		}
 	})
 }
+
+func TestGetRetentionLastMonthAndYear(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		r := Retention{
+			Days:     0,
+			Weeks:    0,
+			Months:   3,
+			UseCount: false,
+		}
+		// 2000-01-01 00:00:00 +0000 UTC
+		//t.Log(time.Now().In(time.UTC))
+		time.Sleep(time.Until(time.Date(2026, 2, 1, 0, 30, 0, 0, time.Local)))
+		t.Log(time.Now())
+
+		last_month, year := GetRetentionLastMonthAndYear(r)
+		if last_month != 11 {
+			t.Errorf("wrong last_month: %v", last_month)
+		}
+		if year != "2025" {
+			t.Errorf("wrong year: %v", year)
+		}
+
+		r.Months = 1
+		last_month, year = GetRetentionLastMonthAndYear(r)
+		if last_month != 1 {
+			t.Errorf("wrong last_month: %v", last_month)
+		}
+		if year != "2026" {
+			t.Errorf("wrong year: %v", year)
+		}
+
+		/* BUG BUG BUG
+		r.Month = 100
+		last_month, year = GetRetentionLastMonthAndYear(r)
+		*/
+	})
+}
