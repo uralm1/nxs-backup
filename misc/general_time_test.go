@@ -47,6 +47,20 @@ func TestGetDateTimeNow(t *testing.T) {
 	})
 }
 
+func TestGetBeginningOfThisDay(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		time.Sleep(time.Until(time.Date(2026, 2, 6, 11, 22, 33, 0, time.Local)))
+		if GetBeginningOfThisDay() != time.Date(2026, 2, 6, 0, 0, 0, 0, time.Local) {
+			t.Error("wrong date 1")
+		}
+
+		time.Sleep(time.Until(time.Date(2026, 2, 7, 18, 33, 44, 0, time.Local)))
+		if GetBeginningOfThisDay() != time.Date(2026, 2, 7, 0, 0, 0, 0, time.Local) {
+			t.Error("wrong date 2")
+		}
+	})
+}
+
 func TestGetDecadeDaySubdir(t *testing.T) {
 	d := []int{1, 10, 11, 20, 21, 28}
 	r := []string{"day_01", "day_01", "day_11", "day_11", "day_21", "day_21"}

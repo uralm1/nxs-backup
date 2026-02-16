@@ -101,6 +101,13 @@ func GetDateTimeNow(unit string) (res string) {
 	return //res
 }
 
+// GetBeginningOfThisDay() returns time.Time of the beginning of local DAY
+func GetBeginningOfThisDay() time.Time {
+	t := time.Now()
+	year, month, day := t.Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, t.Location())
+}
+
 func GetDecadeDaySubdir() (decadeDay string) {
 	intDom, _ := strconv.Atoi(GetDateTimeNow("dom"))
 	if intDom < 11 {

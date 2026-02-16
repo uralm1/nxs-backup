@@ -51,10 +51,7 @@ func (p retentionPeriod) String() string {
 //
 // example: "daily: 7", today is 02.06, retentionDate is 01.31
 func GetRetention(p retentionPeriod, r Retention) (retentionCount int, retentionDate time.Time) {
-	// set curDate to the beginning of local DAY
-	t := time.Now()
-	year, month, day := t.Date()
-	curDate := time.Date(year, month, day, 0, 0, 0, 0, t.Location())
+	curDate := misc.GetBeginningOfThisDay()
 
 	switch p {
 	case Daily:
@@ -296,52 +293,62 @@ func getIBackupDstList(tmpBackupFile, ofs, backupPath string) (backupDst, metada
 	return
 }
 
-type RotateFileInfo struct {
+type RotationObjectInfo struct {
 	name    string
 	modtime time.Time
 }
 
-type RotateFiles []RotateFileInfo
+type RotationObjects []RotationObjectInfo
 
-// DRotationFiles() takes list of files (RotateFiles structure) and returns list of file names that should be deleted
-// retention_date, retention_count, safe_rotation are decision making parameters
-func DRotationFiles(files RotateFiles, retention_date time.Time, retention_count int, use_count, safe_rotation bool) (names []string) {
-	files = slices.DeleteFunc(files, func(f RotateFileInfo) bool {
-		if f.name == ".." || f.name == "." || !(strings.HasSuffix(f.name, ".tar") || strings.HasSuffix(f.name, ".tar.gz")) {
+func NewRotationObjects(cap int) RotationObjects {
+	return make([]RotationObjectInfo, 0, cap)
+}
+
+func (objs *RotationObjects) AddObject(name string, modtime time.Time) {
+	*objs = append(*objs, RotationObjectInfo{name, modtime})
+}
+
+// DGetRotatedObjects() takes list of objects (files, RotationObjects structure) and returns list of object names that should be deleted
+// retention_count, retention_date, use_count, safe_rotation are decision making parameters
+func DGetRotatedObjects(objects RotationObjects, retention_count int, retention_date time.Time, use_count, safe_rotation bool) []string {
+	objects = slices.DeleteFunc(objects, func(o RotationObjectInfo) bool {
+		if o.name == ".." || o.name == "." || !(strings.HasSuffix(o.name, ".tar") || strings.HasSuffix(o.name, ".tar.gz")) {
 			return true
 		}
 		return false
 	})
 
+	names := make([]string, 0, len(objects))
+
 	if use_count {
 		if retention_count > 0 {
-			sort.Slice(files, func(i, j int) bool {
-				return files[i].modtime.Before(files[j].modtime)
+			sort.Slice(objects, func(i, j int) bool {
+				return objects[i].modtime.Before(objects[j].modtime)
 			})
 
 			if !safe_rotation {
 				retention_count--
 			}
-			if retention_count <= len(files) {
-				for _, f := range files[:len(files)-retention_count] {
-					names = append(names, f.name)
+			if retention_count <= len(objects) {
+				for _, o := range objects[:len(objects)-retention_count] {
+					names = append(names, o.name)
 				}
 			} //else { names = []string{} }
 		} else if retention_count == 0 {
-			for _, f := range files {
-				names = append(names, f.name)
+			for _, o := range objects {
+				names = append(names, o.name)
 			}
 		}
 	} else if !retention_date.IsZero() {
-		for _, f := range files {
-			if f.modtime.Location() != retention_date.Location() {
-				retention_date = retention_date.In(f.modtime.Location())
+		for _, o := range objects {
+			if o.modtime.Location() != retention_date.Location() {
+				retention_date = retention_date.In(o.modtime.Location())
 			}
 
-			if f.modtime.Before(retention_date) {
-				names = append(names, f.name)
+			if o.modtime.Before(retention_date) {
+				names = append(names, o.name)
 			}
 		}
 	}
-	return //names
+	return names
 }
