@@ -41,9 +41,6 @@ func TestGetDateTimeNow(t *testing.T) {
 		if GetDateTimeNow("year") != "2026" {
 			t.Error("year")
 		}
-		if GetDateTimeNow("previous_year") != "2025" {
-			t.Error("previous_year")
-		}
 	})
 }
 

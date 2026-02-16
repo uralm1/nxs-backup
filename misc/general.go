@@ -90,8 +90,6 @@ func GetDateTimeNow(unit string) (res string) {
 		res = strconv.Itoa(int(currentTime.Month()))
 	case "year": //2026
 		res = strconv.Itoa(currentTime.Year())
-	case "previous_year": //2025
-		res = strconv.Itoa(currentTime.Year() - 1)
 	case "": //2026-01-22_16-41
 		res = currentTime.Format("2006-01-02_15-04")
 	default:
@@ -109,7 +107,7 @@ func GetBeginningOfThisDay() time.Time {
 }
 
 func GetDecadeDaySubdir() (decadeDay string) {
-	intDom, _ := strconv.Atoi(GetDateTimeNow("dom"))
+	intDom := time.Now().Day() //1-31(30)
 	if intDom < 11 {
 		decadeDay = "day_01"
 	} else if intDom > 20 {
