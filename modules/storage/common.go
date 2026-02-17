@@ -82,17 +82,11 @@ func GetRetention(p retentionPeriod, r Retention) (retentionCount int, retention
 // returns:
 // lastMonth - (curernt month - retention months setting)
 // yearStr - year as string corresonding the lastMonth
-// BUG WARNING: only valid for year+previous year period!!!
 func GetRetentionLastMonthAndYear(r Retention) (lastMonth int, yearStr string) {
-	cur := time.Now()
-	lastMonth = int(cur.Month()) - r.Months
-
-	if lastMonth > 0 {
-		yearStr = strconv.Itoa(cur.Year())
-	} else {
-		yearStr = strconv.Itoa(cur.Year() - 1)
-		lastMonth += 12
-	}
+	t := misc.BeginningOfThisDay()
+	t = t.AddDate(0, -r.Months, 0)
+	lastMonth = int(t.Month())
+	yearStr = strconv.Itoa(t.Year())
 	return
 }
 

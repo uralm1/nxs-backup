@@ -177,9 +177,13 @@ func TestGetRetentionLastMonthAndYear(t *testing.T) {
 			t.Errorf("wrong year: %v", year)
 		}
 
-		/* BUG BUG BUG
-		r.Month = 100
+		r.Months = 100
 		last_month, year = GetRetentionLastMonthAndYear(r)
-		*/
+		if last_month != 10 { //2-100+12*9 = 10
+			t.Errorf("wrong last_month: %v", last_month)
+		}
+		if year != "2017" { //2026-9 = 2017
+			t.Errorf("wrong year: %v", year)
+		}
 	})
 }
