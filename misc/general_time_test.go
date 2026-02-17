@@ -6,53 +6,45 @@ import (
 	"time"
 )
 
-func TestGetDateTimeNowBadUnit(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Error("GetDateTimeNow() didn't panic-ed on bad unit!")
-		}
-	}()
-
-	_ = GetDateTimeNow("bad") //should panic
-}
-
-func TestGetDateTimeNow(t *testing.T) {
+func TestCurrentFuncStr(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		// 2000-01-01 00:00:00 +0000 UTC
-		//t.Log(time.Now().In(time.UTC))
-		time.Sleep(time.Until(time.Date(2026, 2, 6, 11, 22, 33, 0, time.Local)))
-		t.Log(time.Now())
+		time.Sleep(time.Until(time.Date(2024, 2, 6, 11, 22, 33, 0, time.Local)))
 
-		if GetDateTimeNow("") != "2026-02-06_11-22" {
-			t.Error("Empty")
+		if CurrentDateTimeFmt() != "2024-02-06_11-22" {
+			t.Errorf("Wrong format %v", CurrentDateTimeFmt())
 		}
-		if GetDateTimeNow("dom") != "6" {
-			t.Error("dom")
+
+		if CurrentDayStr() != "6" {
+			t.Error("wrong day")
 		}
-		if GetDateTimeNow("dow") != "5" {
-			t.Error("dow")
+
+		if CurrentDOYStr() != "37" {
+			t.Errorf("wrong doy %v", CurrentDOYStr())
 		}
-		if GetDateTimeNow("doy") != "37" {
-			t.Error("doy")
+
+		if CurrentMonthStr() != "2" {
+			t.Error("wrong month")
 		}
-		if GetDateTimeNow("moy") != "2" {
-			t.Error("moy")
+
+		if CurrentDOWStr() != "2" { //Tue
+			t.Errorf("wrong dow %v", CurrentDOWStr())
 		}
-		if GetDateTimeNow("year") != "2026" {
-			t.Error("year")
+
+		if CurrentYearStr() != "2024" {
+			t.Error("wrong year")
 		}
 	})
 }
 
-func TestGetBeginningOfThisDay(t *testing.T) {
+func TestBeginningOfThisDay(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		time.Sleep(time.Until(time.Date(2026, 2, 6, 11, 22, 33, 0, time.Local)))
-		if GetBeginningOfThisDay() != time.Date(2026, 2, 6, 0, 0, 0, 0, time.Local) {
+		if BeginningOfThisDay() != time.Date(2026, 2, 6, 0, 0, 0, 0, time.Local) {
 			t.Error("wrong date 1")
 		}
 
 		time.Sleep(time.Until(time.Date(2026, 2, 7, 18, 33, 44, 0, time.Local)))
-		if GetBeginningOfThisDay() != time.Date(2026, 2, 7, 0, 0, 0, 0, time.Local) {
+		if BeginningOfThisDay() != time.Date(2026, 2, 7, 0, 0, 0, 0, time.Local) {
 			t.Error("wrong date 2")
 		}
 	})

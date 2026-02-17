@@ -35,10 +35,10 @@ func Perform(logCh chan logger.LogRecord, job interfaces.Job) error {
 	logCh <- logger.Log(job.GetName(), "").Info("Starting")
 
 	if jobTmpDir := job.GetTempDir(); jobTmpDir != "" {
-		tmpDirPath = path.Join(jobTmpDir, fmt.Sprintf("%s_%s", job.GetType(), misc.GetDateTimeNow("")))
+		tmpDirPath = path.Join(jobTmpDir, fmt.Sprintf("%s_%s", job.GetType(), misc.CurrentDateTimeFmt()))
 		err := os.MkdirAll(tmpDirPath, os.ModePerm)
 		if err != nil {
-			logCh <- logger.Log(job.GetName(), "").Errorf("Job `%s` failed. Unable to create tmp dir with next error: %s", job.GetName(), err)
+			logCh <- logger.Log(job.GetName(), "").Errorf("Job `%s` failed. Unable to create temporary directory, error: %s", job.GetName(), err)
 			errs = append(errs, err)
 
 			return errors.Join(errs...)

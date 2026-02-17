@@ -51,7 +51,7 @@ func (p retentionPeriod) String() string {
 //
 // example: "daily: 7", today is 02.06, retentionDate is 01.31
 func GetRetention(p retentionPeriod, r Retention) (retentionCount int, retentionDate time.Time) {
-	curDate := misc.GetBeginningOfThisDay()
+	curDate := misc.BeginningOfThisDay()
 
 	switch p {
 	case Daily:
@@ -61,13 +61,13 @@ func GetRetention(p retentionPeriod, r Retention) (retentionCount int, retention
 		retentionCount = r.Days
 		retentionDate = curDate.AddDate(0, 0, -r.Days+1)
 	case Weekly:
-		if misc.GetDateTimeNow("dow") != misc.WeeklyBackupDay || r.Weeks == 0 {
+		if misc.CurrentDOWStr() != misc.WeeklyBackupDay || r.Weeks == 0 {
 			return
 		}
 		retentionCount = r.Weeks
 		retentionDate = curDate.AddDate(0, 0, -r.Weeks*7+1)
 	case Monthly:
-		if misc.GetDateTimeNow("dom") != misc.MonthlyBackupDay || r.Months == 0 {
+		if misc.CurrentDayStr() != misc.MonthlyBackupDay || r.Months == 0 {
 			return
 		}
 		retentionCount = r.Months
@@ -98,8 +98,8 @@ func GetRetentionLastMonthAndYear(r Retention) (lastMonth int, yearStr string) {
 
 func IsNeedToBackup(day, week, month int) bool {
 	if day > 0 ||
-		(week > 0 && misc.GetDateTimeNow("dow") == misc.WeeklyBackupDay) ||
-		(month > 0 && misc.GetDateTimeNow("dom") == misc.MonthlyBackupDay) {
+		(week > 0 && misc.CurrentDOWStr() == misc.WeeklyBackupDay) ||
+		(month > 0 && misc.CurrentDayStr() == misc.MonthlyBackupDay) {
 		return true
 	}
 
@@ -129,11 +129,11 @@ func getDBackupDstAndLinks(tmpBackupFile, ofs, backupPath string, retention Rete
 
 	backupFileName := path.Base(tmpBackupFile)
 	// first day of month
-	if misc.GetDateTimeNow("dom") == misc.MonthlyBackupDay && retention.Months > 0 {
+	if misc.CurrentDayStr() == misc.MonthlyBackupDay && retention.Months > 0 {
 		dst = path.Join(backupPath, ofs, "monthly", backupFileName)
 	}
 	// first day of week (sunday)
-	if misc.GetDateTimeNow("dow") == misc.WeeklyBackupDay && retention.Weeks > 0 {
+	if misc.CurrentDOWStr() == misc.WeeklyBackupDay && retention.Weeks > 0 {
 		dstPath := path.Join(backupPath, ofs, "weekly")
 		if dst != "" {
 			relative, err = filepath.Rel(dstPath, dst)
@@ -166,9 +166,8 @@ func getIBackupDstAndLinks(tmpBackupFile, ofs, backupPath string) (backupDst, me
 	var relative string
 	links = make(map[string]string)
 
-	year := misc.GetDateTimeNow("year")
-	dom := misc.GetDateTimeNow("dom")
-	month := fmt.Sprintf("month_%02s", misc.GetDateTimeNow("moy"))
+	dom := misc.CurrentDayStr()
+	month := fmt.Sprintf("month_%02s", misc.CurrentMonthStr())
 	decadeDay := misc.GetDecadeDaySubdir()
 
 	init := true
@@ -179,11 +178,11 @@ func getIBackupDstAndLinks(tmpBackupFile, ofs, backupPath string) (backupDst, me
 
 	backupFileName := path.Base(tmpBackupFile)
 	// /backup/projpart/2026
-	backupBasePath := path.Join(backupPath, ofs, year)
+	backupBasePath := path.Join(backupPath, ofs, misc.CurrentYearStr())
 	// /backup/projpart/2026/inc_meta_info
 	metadataPath := path.Join(backupBasePath, "inc_meta_info")
 
-	if misc.GetDateTimeNow("doy") == misc.YearlyBackupDay || init {
+	if misc.CurrentDOYStr() == misc.YearlyBackupDay || init {
 		backupDst = path.Join(backupBasePath, "year", backupFileName)
 		metadataDst = path.Join(metadataPath, "year.inc")
 	}
@@ -256,11 +255,11 @@ func getDBackupDstList(tmpBackupFile, ofs, backupPath string, retention Retentio
 	backupFile := path.Base(tmpBackupFile)
 	basePath := path.Join(backupPath, ofs)
 	// first day of month
-	if misc.GetDateTimeNow("dom") == misc.MonthlyBackupDay && retention.Months > 0 {
+	if misc.CurrentDayStr() == misc.MonthlyBackupDay && retention.Months > 0 {
 		dst = append(dst, path.Join(basePath, "monthly", backupFile))
 	}
 	// first day of week (sunday)
-	if misc.GetDateTimeNow("dow") == misc.WeeklyBackupDay && retention.Weeks > 0 {
+	if misc.CurrentDOWStr() == misc.WeeklyBackupDay && retention.Weeks > 0 {
 		dst = append(dst, path.Join(basePath, "weekly", backupFile))
 	}
 	if retention.Days > 0 {
@@ -275,9 +274,8 @@ func getDBackupDstList(tmpBackupFile, ofs, backupPath string, retention Retentio
 // metadataDst: "/backup/projpart/2026/inc_meta_info/year.inc", "/backup/projpart/2026/inc_meta_info/month.inc", "/backup/projpart/2026/inc_meta_info/day.inc"
 func getIBackupDstList(tmpBackupFile, ofs, backupPath string) (backupDst, metadataDst []string) {
 
-	year := misc.GetDateTimeNow("year")
-	dom := misc.GetDateTimeNow("dom")
-	month := fmt.Sprintf("month_%02s", misc.GetDateTimeNow("moy"))
+	dom := misc.CurrentDayStr()
+	month := fmt.Sprintf("month_%02s", misc.CurrentMonthStr())
 	decadeDay := misc.GetDecadeDaySubdir()
 
 	init := true
@@ -287,11 +285,11 @@ func getIBackupDstList(tmpBackupFile, ofs, backupPath string) (backupDst, metada
 
 	backupFileName := path.Base(tmpBackupFile)
 	// /backup/projpart/2026
-	backupBasePath := path.Join(backupPath, ofs, year)
+	backupBasePath := path.Join(backupPath, ofs, misc.CurrentYearStr())
 	// /backup/projpart/2026/inc_meta_info
 	metadataPath := path.Join(backupBasePath, "inc_meta_info")
 
-	if misc.GetDateTimeNow("doy") == misc.YearlyBackupDay || init {
+	if misc.CurrentDOYStr() == misc.YearlyBackupDay || init {
 		backupDst = append(backupDst, path.Join(backupBasePath, "year", backupFileName))
 		metadataDst = append(metadataDst, path.Join(metadataPath, "year.inc"))
 	}

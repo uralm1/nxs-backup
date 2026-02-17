@@ -1,4 +1,4 @@
 package misc
 
 // VERSION is a program version, who would doubt
-const VERSION = "13.18"
+const VERSION = "13.19"

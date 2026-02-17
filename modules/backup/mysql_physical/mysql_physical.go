@@ -282,7 +282,7 @@ func (j *job) createTmpBackup(logCh chan logger.LogRecord, tmpBackupFile, tgtNam
 		backupArgs, prepareArgs []string
 	)
 
-	tmpBackupPath := path.Join(path.Dir(tmpBackupFile), getApp(j.backupType)+"_"+tgtName+"_"+misc.GetDateTimeNow(""))
+	tmpBackupPath := path.Join(path.Dir(tmpBackupFile), getApp(j.backupType)+"_"+tgtName+"_"+misc.CurrentDateTimeFmt())
 
 	authFile, err := files.CreateTmpMysqlAuthFile(target.authFile)
 	if err != nil {

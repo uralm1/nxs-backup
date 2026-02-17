@@ -163,7 +163,7 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 	}
 
 	// set curDate to the beginning of local DAY
-	curDate := misc.GetBeginningOfThisDay()
+	curDate := misc.BeginningOfThisDay()
 
 	objCh := make(chan minio.ObjectInfo)
 
@@ -203,11 +203,11 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 				if s.Retention.UseCount || object.LastModified.Before(curDate.AddDate(0, 0, -s.Retention.Days+1)) {
 					filesList["daily"] = append(filesList["daily"], object)
 				}
-			} else if strings.Contains(object.Key, Weekly.String()) && s.Retention.Weeks > 0 && misc.GetDateTimeNow("dow") == misc.WeeklyBackupDay {
+			} else if strings.Contains(object.Key, Weekly.String()) && s.Retention.Weeks > 0 && misc.CurrentDOWStr() == misc.WeeklyBackupDay {
 				if s.Retention.UseCount || object.LastModified.Before(curDate.AddDate(0, 0, -s.Retention.Weeks*7+1)) {
 					filesList["weekly"] = append(filesList["weekly"], object)
 				}
-			} else if strings.Contains(object.Key, Monthly.String()) && s.Retention.Weeks > 0 && misc.GetDateTimeNow("dom") == misc.MonthlyBackupDay {
+			} else if strings.Contains(object.Key, Monthly.String()) && s.Retention.Weeks > 0 && misc.CurrentDayStr() == misc.MonthlyBackupDay {
 				if s.Retention.UseCount || object.LastModified.Before(curDate.AddDate(0, -s.Retention.Months, 1)) {
 					filesList["monthly"] = append(filesList["monthly"], object)
 				}

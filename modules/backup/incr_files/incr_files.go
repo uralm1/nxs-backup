@@ -295,11 +295,11 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 func (j *job) getPreviousMetadata(logCh chan logger.LogRecord, ofsPart, tmpBackupFile string) (initMeta bool, err error) {
 	var yearMetaFile, monthMetaFile, dayMetaFile io.Reader
 
-	//year := misc.GetDateTimeNow("year")
-	moy := misc.GetDateTimeNow("moy")
-	dom := misc.GetDateTimeNow("dom")
+	//year := misc.CurrentYearStr()
+	moy := misc.CurrentMonthStr()
+	dom := misc.CurrentDayStr()
 
-	initMeta = misc.GetDateTimeNow("doy") == misc.YearlyBackupDay
+	initMeta = misc.CurrentDOYStr() == misc.YearlyBackupDay
 
 	yearMetaFile, err = j.getMetadataFile(logCh, ofsPart, "year.inc")
 	if err != nil {
@@ -311,8 +311,8 @@ func (j *job) getPreviousMetadata(logCh chan logger.LogRecord, ofsPart, tmpBacku
 	}
 
 	if !initMeta {
-		var dstMtdFile *os.File
-		dstMtdFile, err = os.Create(tmpBackupFile + ".inc")
+		var dstMetadataFile *os.File
+		dstMetadataFile, err = os.Create(tmpBackupFile + ".inc")
 		if err != nil {
 			logCh <- logger.Log(j.name, "").Errorf("Failed to create new metadata file. Error: %v", err)
 			return
@@ -324,7 +324,7 @@ func (j *job) getPreviousMetadata(logCh chan logger.LogRecord, ofsPart, tmpBacku
 				logCh <- logger.Log(j.name, "").Error("Failed to find backup day metadata.")
 				return
 			} else {
-				_, err = io.Copy(dstMtdFile, dayMetaFile)
+				_, err = io.Copy(dstMetadataFile, dayMetaFile)
 				if err != nil {
 					logCh <- logger.Log(j.name, "").Errorf("Failed to copy `day` metadata. Error: %v", err)
 					return
@@ -336,14 +336,14 @@ func (j *job) getPreviousMetadata(logCh chan logger.LogRecord, ofsPart, tmpBacku
 				logCh <- logger.Log(j.name, "").Error("Failed to find backup month metadata.")
 				return
 			} else {
-				_, err = io.Copy(dstMtdFile, monthMetaFile)
+				_, err = io.Copy(dstMetadataFile, monthMetaFile)
 				if err != nil {
 					logCh <- logger.Log(j.name, "").Errorf("Failed to copy `month` metadata. Error: %v", err)
 					return
 				}
 			}
 		} else {
-			_, err = io.Copy(dstMtdFile, yearMetaFile)
+			_, err = io.Copy(dstMetadataFile, yearMetaFile)
 			if err != nil {
 				logCh <- logger.Log(j.name, "").Errorf("Failed to copy `year` metadata. Error: %v", err)
 				return
@@ -355,12 +355,11 @@ func (j *job) getPreviousMetadata(logCh chan logger.LogRecord, ofsPart, tmpBacku
 
 // check and get metadata files (include remote storages)
 func (j *job) getMetadataFile(logCh chan logger.LogRecord, ofsPart, metadata string) (reader io.Reader, err error) {
-	year := misc.GetDateTimeNow("year")
 
 	for i := len(j.storages) - 1; i >= 0; i-- {
 		st := j.storages[i]
 
-		reader, err = st.GetFileReader(path.Join(ofsPart, year, "inc_meta_info", metadata))
+		reader, err = st.GetFileReader(path.Join(ofsPart, misc.CurrentYearStr(), "inc_meta_info", metadata))
 		if err != nil {
 			logCh <- logger.Log(j.name, st.GetName()).Warnf("Unable to get previous metadata '%s' from storage. Error: %s ", metadata, err)
 			continue
