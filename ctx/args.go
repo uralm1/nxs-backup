@@ -28,7 +28,7 @@ const (
 type ArgsParams struct {
 	ConfigPath string
 	Cmd        command
-	CmdParams  interface{}
+	CmdParams  any
 	Arg        *arg.Parser
 }
 
@@ -59,7 +59,7 @@ type args struct {
 	Generate *GenerateCmd `arg:"subcommand:generate"`
 	Update   *UpdateCmd   `arg:"subcommand:update"`
 	List     *ListCmd     `arg:"subcommand:ls"`
-	ConfPath string       `arg:"-c,--config" help:"Path to config file" default:"/etc/nxs-backup/nxs-backup.conf" placeholder:"PATH"`
+	ConfPath string       `arg:"-c,--config" help:"Path to config file" default:"/etc/nxs-backup/nxs-backup.yml" placeholder:"PATH"`
 	TestConf bool         `arg:"-t,--test-config" help:"Check if configuration correct"`
 }
 

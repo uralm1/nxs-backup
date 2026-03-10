@@ -3,14 +3,14 @@
 After nxs-backup installation to a server, you need to generate configuration as the config does not
 appear automatically.
 nxs-backup configuration files are located in the /etc/nxs-backup/ directory by default.
-The basic configuration has only the main configuration file nxs-backup.conf and an empty
+The basic configuration has only the main configuration file nxs-backup.yml and an empty
 subdirectory conf.d, where files with job descriptions should be stored (one file per job).
 If the main config file does not exist, you will be prompted to add it at the first startup.
 All configuration files are in YAML format.
 
 This is an example of an empty main config:
 
-/etc/nxs-backup/nxs-backup.conf
+/etc/nxs-backup/nxs-backup.yml
 ```yaml
 server_name: localhost
 project_name: My Best Project
@@ -23,7 +23,7 @@ notifications:
   webhooks: []
 storage_connects: []
 jobs: []
-include_job_configs: [ "conf.d/*.conf" ]
+include_job_configs: [ "conf.d/*.yml" ]
 ```
 
 You can generate a configuration file by running nxs-backup with the generate command and the options:
@@ -60,11 +60,11 @@ Available remote storage types:
 This will generate a configuration file for the job and output the details. 
 
 For example, the next command will add an empty mysql backup job configuration file,
-located by path '/etc/nxs-backup/conf.d/mysql.conf' and add two remote storage connection parameters
+located by path '/etc/nxs-backup/conf.d/mysql.yml' and add two remote storage connection parameters
 to the main config:
 ```sh
 $ sudo nxs-backup generate -T mysql -S aws=s3 dumps=scp
-nxs-backup: Successfully generated '/etc/nxs-backup/conf.d/mysql.conf' configuration file!
+nxs-backup: Successfully generated '/etc/nxs-backup/conf.d/mysql.yml' configuration file!
 ```
 
 Instead of generating configuration files, you can use the empty configuration files available here.
@@ -82,7 +82,7 @@ The configuration is correct.
 ```
 
 If the main configuration file is located on another path, you can define it with the optional
-parameter `-c/--config (the path to the main conf file)`.
+parameter `-c/--config (the path to the main configuration file)`.
 
 To run nxs-backup on a regular schedule, you must add a call of nxs-backup to your **crontab** or **cron.d**.
 

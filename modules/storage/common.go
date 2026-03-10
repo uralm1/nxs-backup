@@ -90,10 +90,10 @@ func GetRetentionLastMonthAndYear(r Retention) (lastMonth int, yearStr string) {
 	return
 }
 
-func IsNeedToBackup(day, week, month int) bool {
-	if day > 0 ||
-		(week > 0 && misc.CurrentDOWStr() == misc.WeeklyBackupDay) ||
-		(month > 0 && misc.CurrentDayStr() == misc.MonthlyBackupDay) {
+func IsNeedToBackup(r Retention) bool {
+	if r.Days > 0 ||
+		(r.Weeks > 0 && misc.CurrentDOWStr() == misc.WeeklyBackupDay) ||
+		(r.Months > 0 && misc.CurrentDayStr() == misc.MonthlyBackupDay) {
 		return true
 	}
 

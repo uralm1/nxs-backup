@@ -32,7 +32,7 @@ func Perform(logCh chan logger.LogRecord, job interfaces.Job) error {
 		}
 	}
 
-	logCh <- logger.Log(job.GetName(), "").Info("Starting")
+	logCh <- logger.Log(job.GetName(), "").Infof("Starting %s job", job.GetName())
 
 	if jobTmpDir := job.GetTempDir(); jobTmpDir != "" {
 		tmpDirPath = path.Join(jobTmpDir, fmt.Sprintf("%s_%s", job.GetType(), misc.CurrentDateTimeFmt()))

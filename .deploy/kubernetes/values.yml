@@ -6,7 +6,7 @@ defaultImageTag: latest
 configMaps:
   config:
     data:
-      nxs-backup.conf: |-
+      nxs-backup.yml: |-
         project_name: "My Project"
         server_name: backup-in-k8s
         notifications:

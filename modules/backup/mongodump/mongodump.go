@@ -233,7 +233,7 @@ func (j *job) NeedToUpdateIncMeta() bool {
 }
 
 func (j *job) DeleteOldBackups(logCh chan logger.LogRecord, ofsPath string) error {
-	logCh <- logger.Log(j.name, "").Debugf("Starting rotate outdated backups.")
+	logCh <- logger.Log(j.name, "").Debugf("Starting outdated backups rotation.")
 	return j.storages.DeleteOldBackups(logCh, j, ofsPath)
 }
 
@@ -329,7 +329,7 @@ func (j *job) createTmpBackup(logCh chan logger.LogRecord, tmpBackupFile string,
 	args = append(args, "--out="+tmpMongodumpPath)
 
 	var stderr, stdout bytes.Buffer
-	logCh <- logger.Log(j.name, "").Infof("Starting a `%s` dump", target.dbName)
+	logCh <- logger.Log(j.name, "").Infof("Starting `%s` dump", target.dbName)
 
 	for _, col := range target.collections {
 		argsCol := append(args, "--collection="+col)

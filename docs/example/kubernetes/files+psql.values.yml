@@ -47,7 +47,7 @@ configMaps:
                 "isEmergencyAlert":  false
                 "rawTriggerMessage": false
                 "monitoringURL":     "-"
-        include_job_configs: ["conf.d/*.conf"]
+        include_job_configs: ["conf.d/*.yml"]
         jobs: []
         storage_connects:
         - name: ssh
@@ -193,13 +193,13 @@ cronJobs:
         name: configs
         items:
           - key: main
-            path: nxs-backup.conf
+            path: nxs-backup.yml
           - key: files-inc
-            path: conf.d/files_inc.conf
+            path: conf.d/files_inc.yml
           - key: files-desc
-            path: conf.d/files_desc.conf
+            path: conf.d/files_desc.yml
           - key: database
-            path: conf.d/database.conf
+            path: conf.d/database.yml
     extraVolumes:
       - name: app-data
         persistentVolumeClaim:

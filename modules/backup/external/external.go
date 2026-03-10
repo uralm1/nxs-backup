@@ -132,7 +132,7 @@ func (j *job) NeedToUpdateIncMeta() bool {
 }
 
 func (j *job) DeleteOldBackups(logCh chan logger.LogRecord, ofsPath string) error {
-	logCh <- logger.Log(j.name, "").Debugf("Starting rotate outdated backups.")
+	logCh <- logger.Log(j.name, "").Debugf("Starting outdated backups rotation.")
 	return j.storages.DeleteOldBackups(logCh, j, ofsPath)
 }
 
@@ -174,7 +174,7 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, _ string) (err error) {
 
 	logCh <- logger.Log(j.name, "").Debugf("Dump cmd: %s", cmd.String())
 
-	logCh <- logger.Log(j.name, "").Infof("Starting of `%s`", j.dumpCmd)
+	logCh <- logger.Log(j.name, "").Infof("Executing `%s`", j.dumpCmd)
 	if err = cmd.Run(); err != nil {
 		j.SetOfsMetrics("", map[string]float64{
 			metrics.BackupTime: float64(time.Since(startTime).Nanoseconds() / 1e6),

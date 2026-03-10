@@ -5,7 +5,7 @@ services:
     command:
     - nxs-backup
     - -c
-    - /nxs-backup.conf
+    - /nxs-backup.yml
     - start
     - all
     volumes:
@@ -13,7 +13,7 @@ services:
       source: ./backup
       target: /var/nxs-backup/dump_tmp
     configs:
-    - nxs-backup.conf
+    - nxs-backup.yml
 configs:
-  nxs-backup.conf:
-    file: ./nxs-backup.conf
+  nxs-backup.yml:
+    file: ./nxs-backup.yml

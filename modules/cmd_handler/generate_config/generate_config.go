@@ -163,7 +163,7 @@ func (gc *generateConfig) Run() {
 		SafeRotation:    false,
 		TmpDir:          "/var/nxs-backup/dump_tmp",
 	}
-	cfgName := gc.jobType + ".conf"
+	cfgName := gc.jobType + ".yml"
 
 	switch gc.jobType {
 	case misc.DiscFiles:
@@ -444,7 +444,7 @@ func updateStorageConnects(cfgPath string, storages map[string]string) error {
 	for _, stNode := range stNodes {
 		for _, st := range yamlNode.Content[0].Content[stIdx].Content {
 			if st.Content[1].Value == stNode.Content[0].Content[1].Value {
-				return fmt.Errorf("Storage with name `%s` already present in config ", st.Content[1].Value)
+				return fmt.Errorf("Storage with name `%s` already exists in config ", st.Content[1].Value)
 			}
 		}
 		yamlNode.Content[0].Content[stIdx].Content = append(

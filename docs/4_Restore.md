@@ -65,15 +65,15 @@ File backup jobs      # Group of files backups
 **Command reference:**
 ```
 $ nxs-backup ls backups -h
-nxs-backup 3.10.0
-Usage: nxs-backup ls backups [JOB_NAME/GROUP_NAME]
+nxs-backup 13.10.0
+Usage: nxs-backup(fork) ls backups [JOB_NAME/GROUP_NAME]
 
 Positional arguments:
   JOB_NAME/GROUP_NAME    Name of job or jobs group to run [default: all]
 
 Global options:
   --config PATH, -c PATH
-                         Path to config file [default: /etc/nxs-backup/nxs-backup.conf]
+                         Path to config file [default: /etc/nxs-backup/nxs-backup.yml]
   --test-config, -t      Check if configuration correct
   --help, -h             display this help and exit
   --version              display version and exit

@@ -344,7 +344,7 @@ storage_connects: []
 
 jobs: []
 
-include_job_configs: ["conf.d/*.conf"]
+include_job_configs: ["conf.d/*.yml"]
 
 logfile: /var/log/nxs-backup/nxs-backup.log
 `

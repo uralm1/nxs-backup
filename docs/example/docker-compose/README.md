@@ -5,4 +5,4 @@ docker-compose.
 
 Docker-compose file with nxs-backup container and metrics server at [docker-compose.yaml](docker-compose.yaml).
 
-Mysql, PSQL database and incremental, discrete files backup jobs config at [nxs-backup.conf](nxs-backup.conf) file.
+Mysql, PSQL database and incremental, discrete files backup jobs config at [nxs-backup.yml](nxs-backup.yml) file.

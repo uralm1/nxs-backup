@@ -62,5 +62,5 @@ storage_connects:
       password: my_ftp_pass
       port: 21
 jobs: []
-include_job_configs: ["conf.d/*.conf"]
+include_job_configs: ["conf.d/*.yml"]
 logfile: /var/log/nxs-backup/nxs-backup.log

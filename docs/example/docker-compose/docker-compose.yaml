@@ -5,7 +5,7 @@ services:
     command:
       - nxs-backup
       - -c
-      - /nxs-backup.conf
+      - /nxs-backup.yml
       - start
       - all
     volumes:
@@ -24,7 +24,7 @@ services:
     command:
       - nxs-backup
       - -c
-      - /nxs-backup.conf
+      - /nxs-backup.yml
       - server
     volumes:
       - metrics:/tmp/metrics
@@ -32,6 +32,6 @@ services:
       - nxs-backup.conf
 configs:
   nxs-backup.conf:
-    file: ./nxs-backup.conf
+    file: ./nxs-backup.yml
 volumes:
   metrics:

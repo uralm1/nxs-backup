@@ -35,7 +35,7 @@ or `.deploy/kubernetes` directory in accordance to the way you choose to install
 git clone git@github.com:nixys/nxs-backup.git
 ```
 
-Modify the `nxs-backup.conf` or `helm values` according to your backup issues.
+Modify the `nxs-backup.yml` or `helm values` according to your backup issues.
 
 ## Docker-compose
 
@@ -44,7 +44,7 @@ Do the following steps:
   ```sh
   cd nxs-backup/.deploy/docker-compose/
   ```
-- Update provided `nxs-backup.conf` file with your parameters (see [docs](https://nxs-backup.io/documentation/stable/3-1-preparing-of-the-main-config/) for details)
+- Update provided `nxs-backup.yml` file with your parameters (see [docs](https://nxs-backup.io/documentation/stable/3-1-preparing-of-the-main-config/) for details)
 - Launch the nxs-backup with command:
   ```sh
   docker compose up -d --pull

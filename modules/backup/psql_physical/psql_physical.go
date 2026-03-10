@@ -195,7 +195,7 @@ func (j *job) NeedToUpdateIncMeta() bool {
 }
 
 func (j *job) DeleteOldBackups(logCh chan logger.LogRecord, ofsPath string) error {
-	logCh <- logger.Log(j.name, "").Debugf("Starting rotate outdated backups.")
+	logCh <- logger.Log(j.name, "").Debugf("Starting outdated backups rotation.")
 	return j.storages.DeleteOldBackups(logCh, j, ofsPath)
 }
 
@@ -301,7 +301,7 @@ func (j *job) createTmpBackup(logCh chan logger.LogRecord, tmpBackupFile, tgtNam
 	logCh <- logger.Log(j.name, "").Infof("Starting to dump `%s` source", tgtName)
 
 	if err := cmd.Wait(); err != nil {
-		logCh <- logger.Log(j.name, "").Errorf("Unable to make dump `%s`. Error: %s", tgtName, stderr.String())
+		logCh <- logger.Log(j.name, "").Errorf("Unable to dump `%s`. Error: %s", tgtName, stderr.String())
 		return err
 	}
 	logCh <- logger.Log(j.name, "").Debug("Got psql data. Compressing...")
@@ -315,7 +315,7 @@ func (j *job) createTmpBackup(logCh chan logger.LogRecord, tmpBackupFile, tgtNam
 		RateLim:     j.diskRateLimit,
 		Excludes:    nil,
 	}); err != nil {
-		logCh <- logger.Log(j.name, "").Errorf("Unable to make tar: %s", err)
+		logCh <- logger.Log(j.name, "").Errorf("Unable to create tar: %s", err)
 		var serr targz.Error
 		if errors.As(err, &serr) {
 			logCh <- logger.Log(j.name, "").Debugf("STDERR: %s", serr.Stderr)
