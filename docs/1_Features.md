@@ -6,14 +6,13 @@ Here is a list of the main features that nxs-backup provides.
         * Discrete
         * Incremental
     - Database backups:
-        * Discrete
-        * Logical backups of MySQL/Percona (5.7/8.0/all versions)
+        * Logical backups of MySQL/Percona (5.7/8.0/8.4/all versions)
         * Logical backups of MariaDB (10/11/all versions)
-        * Physical backups by Xtrabackup (2.4/8.0) of MySQL/Percona (5.7/8.0/all versions)
-        * Physical backups by MariaDB-backup of MariaDB (10/11/all versions)
-        * Logical backups of PostgreSQL (9/10/11/12/13/14/15/16/all versions)
-        * Physical backups by Basebackups of PostgreSQL (9/10/11/12/13/14/15/16/all versions)
-        * Backups of MongoDB (4.0/4.2/4.4/5.0/6.0/7.0/all versions)
+        * Physical backups by Xtrabackup (2.4/8.0) of MySQL/Percona (5.7/8.0/8.4/all versions)
+        * Physical backups by MariaDB-backup of MariaDB (10/11/12/all versions)
+        * Logical backups of PostgreSQL (9-18/all versions)
+        * Physical backups by Basebackups of PostgreSQL (9-18/all versions)
+        * Backups of MongoDB (4.0-8.0/all versions)
         * Backups of Redis (all versions)
     - Support of user-defined scripts that extend functionality
 - Upload and manage backups to the remote storage:
