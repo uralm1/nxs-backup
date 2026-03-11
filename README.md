@@ -57,7 +57,7 @@ GNU/Linux distributions.
   sudo nxs-backup --version
   ```
 - Generate configuration files like described [here](https://github.com/uralm1/nxs-backup/tree/my/docs/2_Configuration.md) or update
-  provided `nxs-backup.conf` and job configuration files in `conf.d` directory with your parameters (see [docs](https://github.com/uralm1/nxs-backup/tree/my/docs/3.1_Usage.md) for details)
+  provided `nxs-backup.yml` and job configuration files in `conf.d` directory with your parameters (see [docs](https://github.com/uralm1/nxs-backup/tree/my/docs/3.1_Usage.md) for details)
 - To start nxs-backup jobs run:
   ```sh
   sudo nxs-backup start
@@ -71,7 +71,7 @@ GNU/Linux distributions.
   ```sh
   cd nxs-backup/.deploy/docker-compose/
   ```
-- Update `nxs-backup.conf` file with your parameters (see [docs](https://github.com/uralm1/nxs-backup/tree/my/docs/3.1_Usage.md) for details)
+- Update `nxs-backup.yml` file with your parameters (see [docs](https://github.com/uralm1/nxs-backup/tree/my/docs/3.1_Usage.md) for details)
 - Launch the nxs-backup with command:
   ```sh
   docker compose up -d --pull
