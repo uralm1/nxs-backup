@@ -41,7 +41,7 @@ type Opts struct {
 	GID    uint32
 }
 
-func Init(name string, params Opts, rl int64) (*NFS, error) {
+func Init(name string, params Opts, ratelimit int64) (*NFS, error) {
 	mount, err := nfs.DialMount(params.Host, time.Second*5) //TODO timeout
 	if err != nil {
 		return nil, fmt.Errorf("Failed to init '%s' NFS storage. Dial MOUNT service error: %v ", name, err)
@@ -71,7 +71,7 @@ func Init(name string, params Opts, rl int64) (*NFS, error) {
 		name:      name,
 		mount:     mount,
 		target:    target,
-		rateLimit: rl,
+		rateLimit: ratelimit,
 	}, nil
 }
 

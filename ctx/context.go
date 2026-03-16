@@ -311,10 +311,10 @@ func logInit(c *Ctx, file, level string) error {
 	return err
 }
 
-func getRateLimit(limit *string) (rl int64, err error) {
-	rl, err = units.FromHumanSize(*limit)
+func getRateLimit(limit *string) (ratelimit int64, err error) {
+	ratelimit, err = units.FromHumanSize(*limit)
 	if err != nil {
-		return 0, fmt.Errorf("Failed to parse rate limit: %w. ", err)
+		return 0, fmt.Errorf("Failed to parse rate limit: %w.", err)
 	}
 
 	return

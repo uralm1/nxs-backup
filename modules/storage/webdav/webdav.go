@@ -38,7 +38,7 @@ type Opts struct {
 	ConnectionTimeout time.Duration
 }
 
-func Init(name string, params Opts, rl int64) (*WebDav, error) {
+func Init(name string, params Opts, ratelimit int64) (*WebDav, error) {
 
 	client, err := webdav.Init(webdav.Params{
 		URL:               params.URL,
@@ -54,7 +54,7 @@ func Init(name string, params Opts, rl int64) (*WebDav, error) {
 	return &WebDav{
 		name:      name,
 		client:    client,
-		rateLimit: rl,
+		rateLimit: ratelimit,
 	}, nil
 }
 

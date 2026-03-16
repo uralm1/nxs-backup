@@ -47,7 +47,7 @@ type Opts struct {
 	Secure        bool
 }
 
-func Init(name string, opts Opts, rl int64) (*S3, error) {
+func Init(name string, opts Opts, ratelimit int64) (*S3, error) {
 	endpoint := opts.Endpoint
 	bucketLookup := minio.BucketLookupAuto
 	if strings.HasPrefix(endpoint, opts.BucketName+".") {
@@ -77,7 +77,7 @@ func Init(name string, opts Opts, rl int64) (*S3, error) {
 		client:        s3Client,
 		bucketName:    opts.BucketName,
 		batchDeletion: opts.BatchDeletion,
-		rateLimit:     rl,
+		rateLimit:     ratelimit,
 	}, nil
 }
 

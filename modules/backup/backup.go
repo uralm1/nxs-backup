@@ -17,7 +17,7 @@ func Perform(logCh chan logger.LogRecord, job interfaces.Job) error {
 	var tmpDirPath string
 
 	if !job.NeedToMakeBackup() {
-		logCh <- logger.Log(job.GetName(), "").Infof("According to the backup plan today no new backups are created for the job %s", job.GetName())
+		logCh <- logger.Log(job.GetName(), "").Infof("According to backup plan no new backups are created for the job %s", job.GetName())
 		return nil
 	}
 

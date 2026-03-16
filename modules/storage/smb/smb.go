@@ -46,11 +46,11 @@ type Opts struct {
 	ConnectionTimeout time.Duration
 }
 
-func Init(sName string, params Opts, rl int64) (s *SMB, err error) {
+func Init(sName string, params Opts, ratelimit int64) (s *SMB, err error) {
 	s = &SMB{
 		name:        sName,
 		conn_params: params,
-		rateLimit:   rl,
+		rateLimit:   ratelimit,
 	}
 
 	if err := s.connect_internal(); err != nil {

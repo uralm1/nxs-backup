@@ -42,7 +42,7 @@ func storagesInit(storageConnections []storageConnectionConf, mainLim *limitsCon
 
 	for _, st := range storageConnections {
 		if _, exist := storagesMap[st.Name]; exist {
-			errs = append(errs, fmt.Errorf("Storage with the name `%s` already defined. Please update configs ", st.Name))
+			errs = append(errs, fmt.Errorf("Storage with the name `%s` is already defined. Please update config ", st.Name))
 			continue
 		}
 
@@ -71,11 +71,11 @@ func storagesInit(storageConnections []storageConnectionConf, mainLim *limitsCon
 		case st.SmbParams != nil:
 			storage, err = smb.Init(st.Name, smb.Opts(*st.SmbParams), rl)
 		default:
-			err = fmt.Errorf("unable to define `%s` storage connect type by its params. Allowed connect params: %s", st.Name, strings.Join(allowedConnectParams, ", "))
+			err = fmt.Errorf("unable to define `%s` storage connection. Allowed connection parameters: %s", st.Name, strings.Join(allowedConnectParams, ", "))
 		}
 
 		if err != nil {
-			errs = append(errs, fmt.Errorf("Failed to init storage `%s` with error: %w ", st.Name, err))
+			errs = append(errs, fmt.Errorf("Failed to init storage `%s`, error: %w ", st.Name, err))
 		} else {
 			storagesMap[st.Name] = storage
 		}

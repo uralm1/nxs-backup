@@ -37,16 +37,16 @@ type Opts struct {
 	User              string
 	Password          string
 	Port              int
-	ConnectCount      int
+	ConnectionCount   int //not used?
 	ConnectionTimeout time.Duration
 }
 
-func Init(name string, opts Opts, rl int64) (s *FTP, err error) {
+func Init(name string, opts Opts, ratelimit int64) (s *FTP, err error) {
 
 	s = &FTP{
 		name:      name,
 		opts:      opts,
-		rateLimit: rl,
+		rateLimit: ratelimit,
 	}
 
 	err = s.updateConn()

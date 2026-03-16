@@ -161,12 +161,12 @@ type s3ConnConf struct {
 }
 
 type sftpConnConf struct {
-	User           string        `conf:"user" conf_extraopts:"required"`
-	Host           string        `conf:"host" conf_extraopts:"required"`
-	Port           int           `conf:"port" conf_extraopts:"default=22"`
-	Password       string        `conf:"password"`
-	KeyFile        string        `conf:"key_file"`
-	ConnectTimeout time.Duration `conf:"connection_timeout" conf_extraopts:"default=10"`
+	User              string        `conf:"user" conf_extraopts:"required"`
+	Host              string        `conf:"host" conf_extraopts:"required"`
+	Port              int           `conf:"port" conf_extraopts:"default=22"`
+	Password          string        `conf:"password"`
+	KeyFile           string        `conf:"key_file"`
+	ConnectionTimeout time.Duration `conf:"connection_timeout" conf_extraopts:"default=10"`
 }
 
 type ftpConnConf struct {
@@ -174,7 +174,7 @@ type ftpConnConf struct {
 	User              string        `conf:"user"`
 	Password          string        `conf:"password"`
 	Port              int           `conf:"port" conf_extraopts:"default=21"`
-	ConnectCount      int           `conf:"connect_count" conf_extraopts:"default=5"`
+	ConnectionCount   int           `conf:"connection_count" conf_extraopts:"default=5"`
 	ConnectionTimeout time.Duration `conf:"connection_timeout" conf_extraopts:"default=10"`
 }
 

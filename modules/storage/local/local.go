@@ -27,9 +27,9 @@ type Local struct {
 	Retention
 }
 
-func Init(rl int64) *Local {
+func Init(ratelimit int64) *Local {
 	return &Local{
-		rateLimit: rl,
+		rateLimit: ratelimit,
 	}
 }
 
@@ -54,6 +54,10 @@ func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 		if err = l.deliverBackupMetadata(logCh, jobName, tmpBackupFile, metadataDstPath); err != nil {
 			return
 		}
+	}
+
+	if backupDstPath == "" { //workaround for retention.days=0
+		return
 	}
 
 	err = os.MkdirAll(path.Dir(backupDstPath), os.ModePerm)

@@ -34,21 +34,21 @@ type SFTP struct {
 }
 
 type Opts struct {
-	User           string
-	Host           string
-	Port           int
-	Password       string
-	KeyFile        string
-	ConnectTimeout time.Duration
+	User              string
+	Host              string
+	Port              int
+	Password          string
+	KeyFile           string
+	ConnectionTimeout time.Duration
 }
 
-func Init(name string, opts Opts, rl int64) (*SFTP, error) {
+func Init(name string, opts Opts, ratelimit int64) (*SFTP, error) {
 
 	sshConfig := &ssh.ClientConfig{
 		User:            opts.User,
 		Auth:            []ssh.AuthMethod{},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         opts.ConnectTimeout * time.Second,
+		Timeout:         opts.ConnectionTimeout * time.Second,
 		ClientVersion:   "SSH-2.0-" + "nxs-backup/" + misc.VERSION,
 	}
 
@@ -83,7 +83,7 @@ func Init(name string, opts Opts, rl int64) (*SFTP, error) {
 	return &SFTP{
 		name:      name,
 		client:    sftpClient,
-		rateLimit: rl,
+		rateLimit: ratelimit,
 	}, nil
 
 }
@@ -111,7 +111,7 @@ func (s *SFTP) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile
 
 	for _, dstPath := range backupDstPaths {
 		if err = s.copy(logCh, jobName, tmpBackupFile, dstPath); err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload tmp backup")
+			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload temp backup")
 			return
 		}
 	}
