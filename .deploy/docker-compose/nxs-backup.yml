@@ -12,7 +12,7 @@ notifications:
     recipients:
       - root@localhost
   webhooks: []
-storage_connects:
+storage_connections:
   - name: obs
     s3_params:
       bucket_name: my_bucket

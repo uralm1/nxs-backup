@@ -8,7 +8,7 @@ notifications:
   mail:
     enabled: false
   webhooks: []
-storage_connects:
+storage_connections:
   - name: s3
     s3_params:
       bucket_name: my_bucket

@@ -241,7 +241,9 @@ func appInit(c *Ctx, cfgPath string) (app, error) {
 	}
 
 	// Init app
-	storages, err := storagesInit(conf.StorageConnects, lim)
+	conf.StorageConnections = append(conf.StorageConnections, conf.StorageConnections_...)
+
+	storages, err := storagesInit(conf.StorageConnections, lim)
 	if err != nil {
 		a.initErr = errors.Join(a.initErr, err)
 	}

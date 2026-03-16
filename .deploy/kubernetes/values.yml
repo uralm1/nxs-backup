@@ -19,7 +19,7 @@ configMaps:
             payload_message_key: "triggerMessage"
             extra_payload:
               "isEmergencyAlert":  false
-        storage_connects:
+        storage_connections:
         - name: obs
           s3_params:
             bucket_name: my_bucket

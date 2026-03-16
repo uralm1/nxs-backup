@@ -16,14 +16,15 @@ import (
 )
 
 type ConfOpts struct {
-	ProjectName     string               `conf:"project_name"`
-	ServerName      string               `conf:"server_name" conf_extraopts:"default=localhost"`
-	Notifications   notificationsConf    `conf:"notifications"`
-	Jobs            []jobConf            `conf:"jobs"`
-	StorageConnects []storageConnectConf `conf:"storage_connects"`
-	IncludeCfgs     []string             `conf:"include_job_configs"`
-	IncludeCfgs_    []string             `conf:"include_jobs_configs"`
-	WaitingTimeout  time.Duration        `conf:"waiting_timeout"`
+	ProjectName        string                  `conf:"project_name"`
+	ServerName         string                  `conf:"server_name" conf_extraopts:"default=localhost"`
+	Notifications      notificationsConf       `conf:"notifications"`
+	Jobs               []jobConf               `conf:"jobs"`
+	StorageConnections []storageConnectionConf `conf:"storage_connections"`
+	IncludeCfgs        []string                `conf:"include_job_configs"`
+	WaitingTimeout     time.Duration           `conf:"waiting_timeout"`
+	/*deprecated*/ StorageConnections_ []storageConnectionConf `conf:"storage_connects"`
+	/*deprecated*/ IncludeCfgs_ []string `conf:"include_jobs_configs"`
 
 	Server serverConf  `conf:"server"`
 	Limits *limitsConf `conf:"limits" conf_extraopts:"default={}"`
@@ -137,7 +138,7 @@ type retentionConf struct {
 	UseCount bool `conf:"count_instead_of_period" conf_extraopts:"default=false"`
 }
 
-type storageConnectConf struct {
+type storageConnectionConf struct {
 	Name         string          `conf:"name" conf_extraopts:"required"`
 	RateLimit    *string         `conf:"rate_limit"`
 	S3Params     *s3ConnConf     `conf:"s3_params"`
@@ -340,7 +341,7 @@ notifications:
     - root@localhost
   webhooks: []
 
-storage_connects: []
+storage_connections: []
 
 jobs: []
 

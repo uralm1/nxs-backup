@@ -25,7 +25,7 @@ var allowedConnectParams = []string{
 	"webdav_params",
 }
 
-func storagesInit(storageConnects []storageConnectConf, mainLim *limitsConf) (storagesMap map[string]interfaces.Storage, err error) {
+func storagesInit(storageConnections []storageConnectionConf, mainLim *limitsConf) (storagesMap map[string]interfaces.Storage, err error) {
 	var (
 		rl      int64
 		errs    []error
@@ -40,7 +40,7 @@ func storagesInit(storageConnects []storageConnectConf, mainLim *limitsConf) (st
 	}
 	storagesMap["local"] = local.Init(rl)
 
-	for _, st := range storageConnects {
+	for _, st := range storageConnections {
 		if _, exist := storagesMap[st.Name]; exist {
 			errs = append(errs, fmt.Errorf("Storage with the name `%s` already defined. Please update configs ", st.Name))
 			continue

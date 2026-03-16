@@ -21,7 +21,7 @@ notifications:
   mail:
     enabled: false
   webhooks: []
-storage_connects: []
+storage_connections: []
 jobs: []
 include_job_configs: [ "conf.d/*.yml" ]
 ```
@@ -43,7 +43,7 @@ Available backup types:
 - external.
 
 
-2. Storage `-S [--storage-types] (optional, space-separated list of storages according to the pattern <storage_name> =<storage_type>)`,
+2. Storage `-S [--storage-types] (optional, space-separated list of storages according to the pattern <storage_name>=<storage_type>)`,
 
 Available remote storage types:
 - s3;

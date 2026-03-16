@@ -49,7 +49,7 @@ configMaps:
                 "monitoringURL":     "-"
         include_job_configs: ["conf.d/*.yml"]
         jobs: []
-        storage_connects:
+        storage_connections:
         - name: ssh
           scp_params:
             user: my_ssh_user

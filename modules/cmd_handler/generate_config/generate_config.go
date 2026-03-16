@@ -67,7 +67,7 @@ type cfgRetentionYaml struct {
 	Months int `yaml:"months,omitempty"`
 }
 
-type storageConnect struct {
+type storageConnection struct {
 	Name         string        `yaml:"name"`
 	S3Params     *s3Params     `yaml:"s3_params,omitempty"`
 	ScpParams    *sftpParams   `yaml:"scp_params,omitempty"`
@@ -337,7 +337,7 @@ func (gc *generateConfig) Run() {
 	}
 
 	// update storage connections
-	if err := updateStorageConnects(gc.cfgPath, gc.storages); err != nil {
+	if err := updateStorageConnections(gc.cfgPath, gc.storages); err != nil {
 		printGenCfgErr(gc.done, err, gc.arg)
 		return
 	}
@@ -402,7 +402,7 @@ func genStorageOpts(storages map[string]string, incrBackup bool) (sts []storageO
 	return
 }
 
-func updateStorageConnects(cfgPath string, storages map[string]string) error {
+func updateStorageConnections(cfgPath string, storages map[string]string) error {
 	content, err := os.ReadFile(cfgPath)
 	if err != nil {
 		return err
@@ -417,7 +417,7 @@ func updateStorageConnects(cfgPath string, storages map[string]string) error {
 
 	stIdx := -1
 	for i, k := range yamlNode.Content[0].Content {
-		if k.Value == "storage_connects" {
+		if k.Value == "storage_connections" {
 			stIdx = i + 1
 			break
 		}
@@ -425,7 +425,7 @@ func updateStorageConnects(cfgPath string, storages map[string]string) error {
 
 	if stIdx == -1 {
 		sNode := &yaml.Node{}
-		sNode.SetString("storage_connects")
+		sNode.SetString("storage_connections")
 		lNode := &yaml.Node{}
 		lNode.Tag = "!!seq"
 		lNode.Kind = yaml.SequenceNode
@@ -436,7 +436,7 @@ func updateStorageConnects(cfgPath string, storages map[string]string) error {
 		yamlNode.Content[0].Content[stIdx].Style = 0
 	}
 
-	stNodes, err := getStorageConnects(storages)
+	stNodes, err := getStorageConnections(storages)
 	if err != nil {
 		return err
 	}
@@ -464,7 +464,7 @@ func updateStorageConnects(cfgPath string, storages map[string]string) error {
 	return e.Encode(&yamlNode)
 }
 
-func getStorageConnects(storages map[string]string) ([]*yaml.Node, error) {
+func getStorageConnections(storages map[string]string) ([]*yaml.Node, error) {
 	ast := []string{
 		"s3",
 		"ssh",
@@ -478,7 +478,7 @@ func getStorageConnects(storages map[string]string) ([]*yaml.Node, error) {
 	var sts []*yaml.Node
 
 	for stName, stType := range storages {
-		st := storageConnect{Name: stName}
+		st := storageConnection{Name: stName}
 		//stNode := yaml.Node{}
 		switch stType {
 		case ast[0]:

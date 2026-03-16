@@ -14,7 +14,7 @@ notifications:
   - webhook_url: https://hooks.slack.com/services/B04AUP00QRX/OkMtk1cq307silFb3rc13W44
     message_level: error
     payload_message_key: "text"
-storage_connects:
+storage_connections:
 - name: s3
   s3_params:
     bucket_name: backups_bucket
