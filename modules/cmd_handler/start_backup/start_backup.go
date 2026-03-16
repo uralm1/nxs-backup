@@ -79,7 +79,7 @@ func (sb *startBackup) Run() {
 	if sb.metricsData.Project != "" {
 		pn = fmt.Sprintf(" (%s)", sb.metricsData.Project)
 	}
-	sb.evCh <- logger.Log("", "").Info(fmt.Sprintf("Backup%s starting: %s.", pn, sb.jobName))
+	sb.evCh <- logger.Log("", "").Info(fmt.Sprintf("Backup%s is starting: %s.", pn, sb.jobName))
 
 	// Create lockfile
 	lock, err := lockfile.New(path.Join(os.TempDir(), "nxs-backup.lck"))
@@ -105,7 +105,7 @@ func (sb *startBackup) Run() {
 
 	if sb.jobName == "external" || sb.jobName == "all" {
 		if len(sb.extJobs) > 0 {
-			sb.evCh <- logger.Log("", "").Info("Starting backup external jobs.")
+			sb.evCh <- logger.Log("", "").Info("Starting external jobs.")
 			for _, job := range sb.extJobs {
 				if err := backup.Perform(sb.evCh, job); err != nil {
 					errs = append(errs, err)
@@ -117,7 +117,7 @@ func (sb *startBackup) Run() {
 	}
 	if sb.jobName == "databases" || sb.jobName == "all" {
 		if len(sb.dbJobs) > 0 {
-			sb.evCh <- logger.Log("", "").Info("Starting backup databases jobs.")
+			sb.evCh <- logger.Log("", "").Info("Starting databases jobs.")
 			for _, job := range sb.dbJobs {
 				if err := backup.Perform(sb.evCh, job); err != nil {
 					errs = append(errs, err)
@@ -129,7 +129,7 @@ func (sb *startBackup) Run() {
 	}
 	if sb.jobName == "files" || sb.jobName == "all" {
 		if len(sb.fileJobs) > 0 {
-			sb.evCh <- logger.Log("", "").Info("Starting backup files jobs.")
+			sb.evCh <- logger.Log("", "").Info("Starting files jobs.")
 			for _, job := range sb.fileJobs {
 				if err := backup.Perform(sb.evCh, job); err != nil {
 					errs = append(errs, err)
@@ -146,5 +146,5 @@ func (sb *startBackup) Run() {
 		}
 	}
 
-	sb.evCh <- logger.Log("_flush_notification", "").Infof("Backup finished.\n")
+	sb.evCh <- logger.Log("_flush_notification", "").Infof("Backup was finished.\n")
 }

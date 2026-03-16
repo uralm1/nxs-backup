@@ -29,7 +29,7 @@ func InitExporter(s ExporterOpts) *Exporter {
 		),
 		BackupOk: prometheus.NewDesc(
 			prometheus.BuildFQName("nxs_backup", "collection", "success"),
-			"Backup finished successfully",
+			"Backup was finished successfully",
 			[]string{"project", "server", "job_name", "job_type", "source", "target"}, nil,
 		),
 		BackupTime: prometheus.NewDesc(
@@ -44,7 +44,7 @@ func InitExporter(s ExporterOpts) *Exporter {
 		),
 		DeliveryOk: prometheus.NewDesc(
 			prometheus.BuildFQName("nxs_backup", "delivery", "success"),
-			"Backup delivery finished successfully",
+			"Backup delivery was finished successfully",
 			[]string{"project", "server", "job_name", "job_type", "source", "target"}, nil,
 		),
 		DeliveryTime: prometheus.NewDesc(
