@@ -15,7 +15,7 @@ jobs:
     - uses: actions/setup-go@v6
       name: Setup Go
       with:
-        go-version: '1.25.6'
+        go-version: '1.25.8'
 
     - name: Set version
       if: github.ref_type == 'tag'
