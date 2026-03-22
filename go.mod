@@ -1,11 +1,11 @@
 module github.com/uralm1/nxs-backup
 
-go 1.25.0
+go 1.26.1
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/alexflint/go-arg v1.6.1
-	github.com/cloudsoda/go-smb2 v0.0.0-20250228001242-d4c70e6251cc
+	github.com/cloudsoda/go-smb2 v0.0.0-20260317175702-c573eba9e280
 	github.com/docker/go-units v0.5.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fatih/color v1.19.0
@@ -16,7 +16,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/juju/ratelimit v1.0.2
 	github.com/klauspost/pgzip v1.2.6
-	github.com/lib/pq v1.11.2
+	github.com/lib/pq v1.12.0
 	github.com/mb0/glob v0.0.0-20160210091149-1eb79d2de6c4
 	github.com/minio/minio-go/v7 v7.0.99
 	github.com/mitchellh/mapstructure v1.5.0
@@ -102,7 +102,7 @@ require (
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 )
 

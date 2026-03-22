@@ -22,3 +22,6 @@
 #go get github.com/pkg/sftp
 
 #go get github.com/minio/minio-go/v7
+
+# v1.36.11 has DCE problem with go1.26
+#go get google.golang.org/protobuf
