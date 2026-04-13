@@ -60,10 +60,9 @@ type SourceParams struct {
 }
 
 func Init(jp JobParams) (interfaces.Job, error) {
-
 	// check if tar and gzip available
 	if _, err := exec_cmd.Exec("tar", "--version"); err != nil {
-		return nil, fmt.Errorf("Job `%s` init failed. Can't check `tar` version. Please install `tar`. Error: %s ", jp.Name, err)
+		return nil, fmt.Errorf("Job `%s` init failed. Can't determine `tar` version. Please install `tar`. Error: %s ", jp.Name, err)
 	}
 
 	j := job{
@@ -202,10 +201,6 @@ func (j *job) CleanupTmpData() error {
 
 func (j *job) NeedToMakeBackup() bool {
 	return j.needToMakeBackup
-}
-
-func (j *job) NeedToUpdateIncMeta() bool {
-	return false
 }
 
 func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {

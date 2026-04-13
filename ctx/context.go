@@ -262,7 +262,7 @@ func appInit(c *Ctx, cfgPath string) (app, error) {
 
 	for _, job := range jobs {
 		switch job.GetType() {
-		case misc.DiscFiles, misc.IncrFiles:
+		case misc.DiscFiles:
 			a.fileJobs = append(a.fileJobs, job)
 		case misc.Mysql, misc.MysqlXtrabackup, misc.MariadbBackup, misc.Postgresql, misc.PostgresqlBasebackup, misc.MongoDB, misc.Redis:
 			a.dbJobs = append(a.dbJobs, job)

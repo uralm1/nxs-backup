@@ -84,7 +84,7 @@ Global options:
 
 #### 4.2.1. Discrete file backups ####
 
-To restore file backups, you have to ensure that you have GNU tar of whatever version is available on your OS.
+To restore file backups, ensure that you have GNU tar of whatever version installed on your OS.
 Follow the usual rules for restoring from a GNU tar archive.
 
 Be careful: handling below replaces each file with its "counterpart" in the archive, so be sure what you do.
@@ -93,86 +93,6 @@ sudo tar -xvpf /path/to/backup.tgz -C /
 ```
 
 As a result of executing this command, the files contained in the archive will be unpacked
-into the / directory, with their paths and access rights preserved and information about
-the extraction process displayed.
-
-
-#### 4.2.2. Incremental file backups ####
-
-To restore incremental file backups, you have to ensure that you have GNU tar of whatever version
-is available on your OS.
-
-This diagram shows the general structure of file and directory storage with incremental copies.
-
-![Схема-2.png](Схема-2.png)
-
-To restore incremental files backup to the specific date, you have to untar files in the next sequence:
-
-Annual copy (full-year backup) -> monthly copy -> decade copy -> daily copy
-
-1. Unpack the full-year copy with the following command:
-
-```sh
-tar -xpGf /path/to/full/year/backup
-```
-
-2. Then alternately unpack the monthly, decade, and daily incremental backups, specifying a special key -G:
-
-```sh
-tar -xpGf /path/to/monthly/backup
-tar -xpGf /path/to/decade/backup
-tar -xpGf /path/to/day/backup
-```
-
-If you need to restore data for a date that falls at the beginning of a period, such as a month
-or a decade, you should not restore from a decade or daily copy.
-
-Be careful: handling below replaces each file with its "counterpart" in the archive, so be sure what you do.
-
-Example:
-```
-# Tree of backups files
-/var/nxs-backups
-├── files
-│   ├── desc [...]
-│   └── inc
-│       └── www
-│           ├── project0
-│           │   └── 2023
-│           │       ├── inc_meta_info [...]
-│           │       ├── month_01 [...]
-│           │       ├── month_02 [...]
-│           │       ├── month_03 [...]
-│           │       ├── month_04 [...]
-│           │       ├── month_05 [...]
-│           │       ├── month_06 [...]
-│           │       ├── month_07 [...]
-│           │       │   ├── day_01 [...]
-│           │       │   ├── day_11 [...]
-│           │       │   ├── day_21
-│           │       │   │   ├── project0_2023-07-21_01-45.tar.gz
-│           │       │   │   ├── project0_2023-07-22_01-43.tar.gz
-│           │       │   │   ├── project0_2023-07-23_01-44.tar.gz
-│           │       │   │   ├── project0_2023-07-24_01-47.tar.gz
-│           │       │   │   ├── project0_2023-07-25_01-44.tar.gz
-│           │       │   │   └── project0_2023-07-26_01-48.tar.gz
-│           │       │   └── montly
-│           │       │       └── project0_2023-07-01_01-45.tar.gz
-│           │       └── year
-│           │           └── project0_2023-01-01_01-44.tar.gz
-│           └── project1 [...]
-└── databases [...]
-```
-
-```sh
-# Restore files to July 26 of 2023
-tar -xpGf /var/nxs-backups/files/inc/www/project0/2023/year/project0_2023-01-01_01-44.tar.gz -C /
-tar -xpGf /var/nxs-backups/files/inc/www/project0/2023/month_07/montly/project0_2023-07-01_01-45.tar.gz -C /
-tar -xpGf /var/nxs-backups/files/inc/www/project0/2023/month_07/day_21/project0_2023-07-21_01-45.tar.gz -C /
-tar -xpGf /var/nxs-backups/files/inc/www/project0/2023/month_07/day_21/project0_2023-07-26_01-48.tar.gz -C /
-```
-
-As a result of executing this command, the files contained in the archives will be unpacked
 into the / directory, with their paths and access rights preserved and information about
 the extraction process displayed.
 

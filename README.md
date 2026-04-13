@@ -13,7 +13,6 @@ GNU/Linux distributions.
 - Full data backup
   - File backups:
     - Discrete files backups
-    - Incremental files backups
   - Database backups:
     - Logical backups of MySQL/Percona (5.7/8.0/8.4/_all versions_)
     - Logical backups of MariaDB (10-12/_all versions_)

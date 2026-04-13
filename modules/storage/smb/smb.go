@@ -10,7 +10,6 @@ import (
 	"net"
 	"os"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +18,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/uralm1/nxs-backup/interfaces"
-	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/backend/files"
 	"github.com/uralm1/nxs-backup/modules/logger"
 	. "github.com/uralm1/nxs-backup/modules/storage"
@@ -95,17 +93,8 @@ func (s *SMB) Configure(p Params) {
 
 func (s *SMB) IsLocal() int { return 0 }
 
-func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
-	backupDstPaths, metadataDstPaths :=
-		GetBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
-
-	// len(metadataDstPaths) > 0 is actual only for incremental backup
-	for _, dstPath := range metadataDstPaths {
-		if err = s.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Unable to upload incremental metadata file")
-			return
-		}
-	}
+func (s *SMB) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string) (err error) {
+	backupDstPaths := GetBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention)
 
 	for _, dstPath := range backupDstPaths {
 		if err = s.copy(logCh, jobName, tmpBackupFile, dstPath); err != nil {
@@ -170,17 +159,13 @@ func (s *SMB) copy(logCh chan logger.LogRecord, job, src, dst string) (err error
 	return nil
 }
 
-func (s *SMB) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
+func (s *SMB) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job) error {
 	if !s.rotateEnabled {
 		logCh <- logger.Log(job.GetName(), s.name).Info("Backup rotation was skipped (disabled in config)")
 		return nil
 	}
 
-	if job.GetType() == misc.IncrFiles {
-		return s.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
-	} else {
-		return s.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
-	}
+	return s.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
 }
 
 func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safe_rotation bool) error {
@@ -215,48 +200,6 @@ func (s *SMB) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 				errs = append(errs, err)
 			} else {
 				logCh <- logger.Log(jobName, s.name).Infof("Deleted old backup file '%s'", f_path)
-			}
-		}
-	}
-
-	return errors.Join(errs...)
-}
-
-func (s *SMB) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
-	var errs []error
-
-	if full {
-		backupDir := path.Join(s.backupPath, ofsPart)
-
-		err := s.share.RemoveAll(backupDir)
-		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
-			errs = append(errs, err)
-		}
-	} else {
-		lastMonth, year := GetRetentionLastMonthAndYear(s.Retention)
-		backupDir := path.Join(s.backupPath, ofsPart, year)
-
-		dirs, err := s.share.ReadDir(backupDir)
-		if err != nil {
-			logCh <- logger.Log(jobName, s.name).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
-			return err
-		}
-		rx := regexp.MustCompile(`month_\d\d`)
-		for _, dir := range dirs {
-			dirName := dir.Name()
-			if rx.MatchString(dirName) {
-				dirParts := strings.Split(dirName, "_")
-				dirMonth, _ := strconv.Atoi(dirParts[1])
-				if dirMonth < lastMonth {
-					if err = s.share.RemoveAll(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, s.name).Errorf("Failed to delete '%s' in directory '%s' with error: %s",
-							dirName, backupDir, err)
-						errs = append(errs, err)
-					} else {
-						logCh <- logger.Log(jobName, s.name).Infof("Deleted old backup '%s' in directory '%s'", dirName, backupDir)
-					}
-				}
 			}
 		}
 	}

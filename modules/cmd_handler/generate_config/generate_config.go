@@ -184,24 +184,6 @@ func (gc *generateConfig) Run() {
 				SaveAbsPath: true,
 			},
 		}
-	case misc.IncrFiles:
-		job.StoragesOptions = genStorageOpts(gc.storages, true)
-		job.Sources = []sourceYaml{
-			{
-				Name: "incremental_files",
-				Gzip: true,
-				Targets: []string{
-					"/var/www/html/www.site.io",
-					"/some/path/for/backup",
-				},
-				Excludes: []string{
-					"tmp",
-					"log",
-					"some_extra_exclude",
-				},
-				SaveAbsPath: true,
-			},
-		}
 	case misc.Mysql:
 		job.StoragesOptions = genStorageOpts(gc.storages, false)
 		job.Sources = []sourceYaml{

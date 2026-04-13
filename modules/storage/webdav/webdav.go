@@ -8,13 +8,9 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/uralm1/nxs-backup/interfaces"
-	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/backend/files"
 	"github.com/uralm1/nxs-backup/modules/backend/webdav"
 	"github.com/uralm1/nxs-backup/modules/logger"
@@ -67,17 +63,8 @@ func (wd *WebDav) Configure(p Params) {
 
 func (wd *WebDav) IsLocal() int { return 0 }
 
-func (wd *WebDav) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) (err error) {
-	backupDstPaths, metadataDstPaths :=
-		GetBackupDstList(tmpBackupFile, ofs, wd.backupPath, wd.Retention, backupType)
-
-	// len(metadataDstPaths) > 0 is actual only for incremental backup
-	for _, dstPath := range metadataDstPaths {
-		if err = wd.copy(logCh, jobName, tmpBackupFile+".inc", dstPath); err != nil {
-			logCh <- logger.Log(jobName, wd.name).Errorf("Unable to upload incremental metadata file")
-			return
-		}
-	}
+func (wd *WebDav) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string) (err error) {
+	backupDstPaths := GetBackupDstList(tmpBackupFile, ofs, wd.backupPath, wd.Retention)
 
 	for _, dstPath := range backupDstPaths {
 		if err = wd.copy(logCh, jobName, tmpBackupFile, dstPath); err != nil {
@@ -114,17 +101,13 @@ func (wd *WebDav) copy(logCh chan logger.LogRecord, job, src, dst string) (err e
 	return
 }
 
-func (wd *WebDav) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
+func (wd *WebDav) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job) error {
 	if !wd.rotateEnabled {
 		logCh <- logger.Log(job.GetName(), wd.name).Info("Backup rotation was skipped (disabled in config)")
 		return nil
 	}
 
-	if job.GetType() == misc.IncrFiles {
-		return wd.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
-	} else {
-		return wd.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
-	}
+	return wd.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
 }
 
 func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safe_rotation bool) error {
@@ -160,48 +143,6 @@ func (wd *WebDav) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart
 				errs = append(errs, err)
 			} else {
 				logCh <- logger.Log(jobName, wd.name).Infof("Deleted old backup file '%s' in directory '%s'", file, backupDir)
-			}
-		}
-	}
-
-	return errors.Join(errs...)
-}
-
-func (wd *WebDav) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
-	var errs []error
-
-	if full {
-		backupDir := path.Join(wd.backupPath, ofsPart)
-
-		err := wd.client.Rm(backupDir)
-		if err != nil {
-			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
-			errs = append(errs, err)
-		}
-	} else {
-		lastMonth, year := GetRetentionLastMonthAndYear(wd.Retention)
-		backupDir := path.Join(wd.backupPath, ofsPart, year)
-
-		dirs, err := wd.client.Ls(backupDir)
-		if err != nil {
-			logCh <- logger.Log(jobName, wd.name).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
-			return err
-		}
-		rx := regexp.MustCompile(`month_\d\d`)
-		for _, dir := range dirs {
-			dirName := dir.Name()
-			if rx.MatchString(dirName) {
-				dirParts := strings.Split(dirName, "_")
-				dirMonth, _ := strconv.Atoi(dirParts[1])
-				if dirMonth < lastMonth {
-					if err = wd.client.Rm(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, wd.name).Errorf("Failed to delete '%s' in dir '%s' with error: %s",
-							dirName, backupDir, err)
-						errs = append(errs, err)
-					} else {
-						logCh <- logger.Log(jobName, wd.name).Infof("Deleted old backup '%s' in directory '%s'", dirName, backupDir)
-					}
-				}
 			}
 		}
 	}

@@ -64,8 +64,8 @@ configMaps:
             secret_access_key: ENV:S3_SECRET_KEY
             endpoint: s3.amazonaws.com
             region: us-central-1
-      files-desc: |
-        job_name: "files backup desc"
+      files-disc: |
+        job_name: "files backup disc"
         type: files
         tmp_dir: /var/nxs-backup/tmp_dump
         sources:
@@ -86,32 +86,6 @@ configMaps:
               months: 0
           - storage_name: aws_s3
             backup_path: nxs-backup/files/desc
-            retention:
-              days: 30
-              weeks: 0
-              months: 12
-      files-inc: |
-        job_name: "files backup incr"
-        type: incr_files
-        tmp_dir: /var/nxs-backup/tmp_dump
-        sources:
-          - name: upload
-            save_abs_path: yes
-            targets:
-              - /var/www/project/upload
-            excludes:
-              - log
-              - tmp
-            gzip: true
-        storages_options:
-          - storage_name: local
-            backup_path: /var/nxs-backup/files/incr
-            retention:
-              days: 3
-              weeks: 0
-              months: 0
-          - storage_name: aws_s3
-            backup_path: nxs-backup/files/incr
             retention:
               days: 30
               weeks: 0
@@ -194,9 +168,7 @@ cronJobs:
         items:
           - key: main
             path: nxs-backup.yml
-          - key: files-inc
-            path: conf.d/files_inc.yml
-          - key: files-desc
+          - key: files-disc
             path: conf.d/files_desc.yml
           - key: database
             path: conf.d/database.yml

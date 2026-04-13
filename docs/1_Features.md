@@ -2,9 +2,7 @@
 
 Here is a list of the main features that nxs-backup provides.
 - Full data backup
-    - Files backups:
-        * Discrete
-        * Incremental
+    - Files backups
     - Database backups:
         * Logical backups of MySQL/Percona (5.7/8.0/8.4/all versions)
         * Logical backups of MariaDB (10/11/all versions)
@@ -14,7 +12,7 @@ Here is a list of the main features that nxs-backup provides.
         * Physical backups by Basebackups of PostgreSQL (9-18/all versions)
         * Backups of MongoDB (4.0-8.0/all versions)
         * Backups of Redis (all versions)
-    - Support of user-defined scripts that extend functionality
+    - Support of user-defined scripts to extend functionality
 - Upload and manage backups to the remote storage:
     * S3 (Simple Storage Service that provides object storage through a web interface. Supported by clouds e.g. AWS, GCP)
     * SSH (SFTP)

@@ -19,7 +19,6 @@ type Job interface {
 	IsSafeRotation() bool
 	ListBackups() JobTargets
 	NeedToMakeBackup() bool
-	NeedToUpdateIncMeta() bool
 	DoBackup(logCh chan logger.LogRecord, tmpDir string) error
 	DeleteOldBackups(logCh chan logger.LogRecord, ofsPath string) error
 	CleanupTmpData() error

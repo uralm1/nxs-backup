@@ -228,10 +228,6 @@ func (j *job) NeedToMakeBackup() bool {
 	return j.needToMakeBackup
 }
 
-func (j *job) NeedToUpdateIncMeta() bool {
-	return false
-}
-
 func (j *job) DeleteOldBackups(logCh chan logger.LogRecord, ofsPath string) error {
 	logCh <- logger.Log(j.name, "").Debugf("Starting rotation of the outdated backups.")
 	return j.storages.DeleteOldBackups(logCh, j, ofsPath)

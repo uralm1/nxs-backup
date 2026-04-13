@@ -28,7 +28,6 @@ const (
 	VersionURL       = "https://github.com/uralm1/nxs-backup/releases/download/"
 
 	DiscFiles            BackupType = "files"
-	IncrFiles            BackupType = "incr_files"
 	Mysql                BackupType = "mysql"
 	MysqlXtrabackup      BackupType = "mysql_xtrabackup"
 	MariadbBackup        BackupType = "mariadb_backup"
@@ -39,13 +38,11 @@ const (
 	External             BackupType = "external"
 )
 
-var DecadesBackupDays = []string{"1", "11", "21"}
 var CPULimit = 0
 
 func AllowedBackupTypesList() []string {
 	return []string{
 		string(DiscFiles),
-		string(IncrFiles),
 		string(Mysql),
 		string(MysqlXtrabackup),
 		string(MariadbBackup),
@@ -86,24 +83,9 @@ func CurrentDayStr() (Day string) {
 	return strconv.Itoa(time.Now().Day())
 }
 
-// CurrentDOYStr() returns current day of the year as a string: "1-365(366)"
-func CurrentDOYStr() (DOY string) {
-	return strconv.Itoa(time.Now().YearDay())
-}
-
-// CurrentMonthStr() returns current month as a string: "1-12"
-func CurrentMonthStr() (Month string) {
-	return strconv.Itoa(int(time.Now().Month()))
-}
-
 // CurrentDOWStr() returns current day of the week as a string: "0-6"
 func CurrentDOWStr() (DOW string) {
 	return strconv.Itoa(int(time.Now().Weekday()))
-}
-
-// CurrentYearStr() returns current year as a string: "2026"
-func CurrentYearStr() (Year string) {
-	return strconv.Itoa(time.Now().Year())
 }
 
 // BeginningOfThisDay() returns time.Time of the beginning of local DAY
@@ -111,18 +93,6 @@ func BeginningOfThisDay() time.Time {
 	t := time.Now()
 	year, month, day := t.Date()
 	return time.Date(year, month, day, 0, 0, 0, 0, t.Location())
-}
-
-func GetDecadeDaySubdir() (decadeDay string) {
-	intDom := time.Now().Day() //1-31(30)
-	if intDom < 11 {
-		decadeDay = "day_01"
-	} else if intDom > 20 {
-		decadeDay = "day_21"
-	} else {
-		decadeDay = "day_11"
-	}
-	return
 }
 
 func GetFileFullPath(dirPath, baseName, baseExtension, prefix string, gzip bool) (fullPath string) {

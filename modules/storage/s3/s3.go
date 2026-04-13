@@ -10,9 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -90,38 +88,8 @@ func (s *S3) Configure(p Params) {
 
 func (s *S3) IsLocal() int { return 0 }
 
-func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) error {
-	backupDstPaths, metadataDstPaths :=
-		GetBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention, backupType)
-
-	if len(metadataDstPaths) > 0 { //len(metadataDstPaths) > 0 only for incremental backup
-		metadataSrcPath := tmpBackupFile + ".inc"
-
-		metadataSrc, err := files.GetLimitedFileReader(metadataSrcPath, s.rateLimit)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = metadataSrc.Close() }()
-
-		metadataSrcStat, err := os.Stat(metadataSrcPath)
-		if err != nil {
-			return err
-		}
-
-		for _, bucketPath := range metadataDstPaths {
-			_, err = s.client.PutObject(context.Background(), s.bucketName, bucketPath,
-				metadataSrc, metadataSrcStat.Size(),
-				minio.PutObjectOptions{
-					ContentType:    "application/octet-stream",
-					SendContentMd5: true,
-				})
-			if err != nil {
-				return err
-			}
-			logCh <- logger.Log(jobName, s.name).Infof("Successfully uploaded object '%s' to bucket %s (%s)", bucketPath, s.bucketName,
-				humanize.Bytes(uint64(metadataSrcStat.Size())))
-		}
-	} //incremental backup
+func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string) error {
+	backupDstPaths := GetBackupDstList(tmpBackupFile, ofs, s.backupPath, s.Retention)
 
 	source, err := files.GetLimitedFileReader(tmpBackupFile, s.rateLimit)
 	if err != nil {
@@ -156,7 +124,7 @@ func (s *S3) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, 
 	return nil
 }
 
-func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job interfaces.Job, full bool) error {
+func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job interfaces.Job) error {
 	if !s.rotateEnabled {
 		logCh <- logger.Log(job.GetName(), s.name).Info("Backup rotation was skipped (disabled in config)")
 		return nil
@@ -179,38 +147,21 @@ func (s *S3) DeleteOldBackups(logCh chan logger.LogRecord, ofs string, job inter
 			return object.Err
 		}
 
-		if job.GetType() == misc.IncrFiles {
-			if full {
-				filesList["inc"] = append(filesList["inc"], object)
-			} else {
-				lastMonth, year := GetRetentionLastMonthAndYear(s.Retention)
+		if object.LastModified.Location() != curDate.Location() {
+			curDate = curDate.In(object.LastModified.Location())
+		}
 
-				rx := regexp.MustCompile(year + "/month_\\d\\d")
-				if rx.MatchString(object.Key) {
-					dirParts := strings.Split(path.Base(object.Key), "_")
-					dirMonth, _ := strconv.Atoi(dirParts[1])
-					if dirMonth < lastMonth {
-						filesList["inc"] = append(filesList["inc"], object)
-					}
-				}
+		if strings.Contains(object.Key, Daily.String()) && s.Retention.Days > 0 {
+			if s.Retention.UseCount || object.LastModified.Before(curDate.AddDate(0, 0, -s.Retention.Days+1)) {
+				filesList["daily"] = append(filesList["daily"], object)
 			}
-		} else {
-			if object.LastModified.Location() != curDate.Location() {
-				curDate = curDate.In(object.LastModified.Location())
+		} else if strings.Contains(object.Key, Weekly.String()) && s.Retention.Weeks > 0 && misc.CurrentDOWStr() == misc.WeeklyBackupDay {
+			if s.Retention.UseCount || object.LastModified.Before(curDate.AddDate(0, 0, -s.Retention.Weeks*7+1)) {
+				filesList["weekly"] = append(filesList["weekly"], object)
 			}
-
-			if strings.Contains(object.Key, Daily.String()) && s.Retention.Days > 0 {
-				if s.Retention.UseCount || object.LastModified.Before(curDate.AddDate(0, 0, -s.Retention.Days+1)) {
-					filesList["daily"] = append(filesList["daily"], object)
-				}
-			} else if strings.Contains(object.Key, Weekly.String()) && s.Retention.Weeks > 0 && misc.CurrentDOWStr() == misc.WeeklyBackupDay {
-				if s.Retention.UseCount || object.LastModified.Before(curDate.AddDate(0, 0, -s.Retention.Weeks*7+1)) {
-					filesList["weekly"] = append(filesList["weekly"], object)
-				}
-			} else if strings.Contains(object.Key, Monthly.String()) && s.Retention.Weeks > 0 && misc.CurrentDayStr() == misc.MonthlyBackupDay {
-				if s.Retention.UseCount || object.LastModified.Before(curDate.AddDate(0, -s.Retention.Months, 1)) {
-					filesList["monthly"] = append(filesList["monthly"], object)
-				}
+		} else if strings.Contains(object.Key, Monthly.String()) && s.Retention.Weeks > 0 && misc.CurrentDayStr() == misc.MonthlyBackupDay {
+			if s.Retention.UseCount || object.LastModified.Before(curDate.AddDate(0, -s.Retention.Months, 1)) {
+				filesList["monthly"] = append(filesList["monthly"], object)
 			}
 		}
 	}

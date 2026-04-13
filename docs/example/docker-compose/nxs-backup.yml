@@ -104,28 +104,8 @@ jobs:
       weeks: 0
       months: 0
   - storage_name: s3
-    backup_path: files/desc
+    backup_path: files/disc
     retention:
       days: 30
       weeks: 0
-      months: 12
-- job_name: incr_files
-  type: incr_files
-  tmp_dir: /var/nxs-backup/tmp_dump/incr_files
-  sources:
-  - name: "prod_data"
-    save_abs_path: yes
-    targets:
-    - /path/to/backup/*/uploads/
-    excludes:
-    - '**/bitrix**'
-    gzip: true
-  storages_options:
-  - storage_name: local
-    backup_path: /var/nxs-backup/files/inc
-    retention:
-      months: 12
-  - storage_name: s3
-    backup_path: files/inc
-    retention:
       months: 12

@@ -4,10 +4,8 @@ import (
 	"errors"
 	"io"
 	"os"
-	"path"
 	"time"
 
-	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/logger"
 	"github.com/uralm1/nxs-backup/modules/metrics"
 	"github.com/uralm1/nxs-backup/modules/storage"
@@ -23,8 +21,8 @@ type TargetsOnStorages map[string]TargetFiles
 type Storage interface {
 	Clone() Storage
 	Configure(storage.Params)
-	DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupPath, ofs string, backupType misc.BackupType) error
-	DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job Job, full bool) error
+	DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupPath, ofs string) error
+	DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job Job) error
 	GetFileReader(string) (io.Reader, error)
 	GetName() string
 	IsLocal() int
@@ -43,13 +41,13 @@ func (s Storages) DeleteOldBackups(logCh chan logger.LogRecord, j Job, ofsPath s
 
 	for _, st := range s {
 		if ofsPath != "" {
-			err := st.DeleteOldBackups(logCh, ofsPath, j, true)
+			err := st.DeleteOldBackups(logCh, ofsPath, j)
 			if err != nil {
 				errs = append(errs, err)
 			}
 		} else {
 			for _, ofsPart := range j.GetTargetOfsList() {
-				err := st.DeleteOldBackups(logCh, ofsPart, j, false)
+				err := st.DeleteOldBackups(logCh, ofsPart, j)
 				if err != nil {
 					errs = append(errs, err)
 				}
@@ -70,7 +68,7 @@ func (s Storages) Delivery(logCh chan logger.LogRecord, job Job) error {
 		startTime := time.Now()
 		ok := float64(0)
 		for _, st := range s {
-			if err := st.DeliverBackup(logCh, job.GetName(), dumpObj.TmpFile, ofs, job.GetType()); err != nil {
+			if err := st.DeliverBackup(logCh, job.GetName(), dumpObj.TmpFile, ofs); err != nil {
 				deliveryErrs = append(deliveryErrs, err)
 			}
 		}
@@ -107,19 +105,9 @@ func (s Storages) CleanupTmpData(job Job) error {
 	var errs []error
 
 	for _, dumpObj := range job.GetDumpObjects() {
-
-		tmpBakFile := dumpObj.TmpFile
-		if job.GetType() == misc.IncrFiles {
-			// cleanup tmp metadata files
-			_ = os.Remove(path.Join(tmpBakFile + ".inc"))
-			initFile := path.Join(tmpBakFile + ".init")
-			if _, err := os.Stat(initFile); err == nil {
-				_ = os.Remove(initFile)
-			}
-		}
-
+		tmpBackupFile := dumpObj.TmpFile
 		// cleanup tmp backup file
-		if err := os.Remove(tmpBakFile); err != nil {
+		if err := os.Remove(tmpBackupFile); err != nil {
 			errs = append(errs, err)
 		}
 	}

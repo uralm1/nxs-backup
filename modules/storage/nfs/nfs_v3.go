@@ -8,9 +8,6 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -18,7 +15,6 @@ import (
 	"github.com/willscott/go-nfs-client/nfs/rpc"
 
 	"github.com/uralm1/nxs-backup/interfaces"
-	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/backend/files"
 	"github.com/uralm1/nxs-backup/modules/logger"
 	. "github.com/uralm1/nxs-backup/modules/storage"
@@ -84,17 +80,8 @@ func (n *NFS) Configure(p Params) {
 
 func (n *NFS) IsLocal() int { return 0 }
 
-func (n *NFS) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string, backupType misc.BackupType) error {
-	backupDstPaths, metadataDstPaths :=
-		GetBackupDstList(tmpBackupFile, ofs, n.backupPath, n.Retention, backupType)
-
-	// len(metadataDstPaths) > 0 is actual only for incremental backup
-	for _, dstPath := range metadataDstPaths {
-		if err := n.copy(logCh, jobName, dstPath, tmpBackupFile+".inc"); err != nil {
-			logCh <- logger.Log(jobName, n.name).Errorf("Unable to upload incremental metadata file")
-			return err
-		}
-	}
+func (n *NFS) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFile, ofs string) error {
+	backupDstPaths := GetBackupDstList(tmpBackupFile, ofs, n.backupPath, n.Retention)
 
 	for _, dstPath := range backupDstPaths {
 		if err := n.copy(logCh, jobName, dstPath, tmpBackupFile); err != nil {
@@ -139,17 +126,13 @@ func (n *NFS) copy(logCh chan logger.LogRecord, job, dst, src string) (err error
 	return nil
 }
 
-func (n *NFS) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job, full bool) error {
+func (n *NFS) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job) error {
 	if !n.rotateEnabled {
 		logCh <- logger.Log(job.GetName(), n.name).Info("Backup rotation was skipped (disabled in config)")
 		return nil
 	}
 
-	if job.GetType() == misc.IncrFiles {
-		return n.deleteIncrBackup(logCh, job.GetName(), ofsPart, full)
-	} else {
-		return n.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
-	}
+	return n.deleteDiscBackup(logCh, job.GetName(), ofsPart, job.IsSafeRotation())
 }
 
 func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart string, safe_rotation bool) error {
@@ -165,7 +148,7 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 		nfsFilesPlus, err := n.target.ReadDirPlus(backupDir)
 		if err != nil {
 			if os.IsNotExist(err) {
-				logCh <- logger.Log(jobName, n.name).Debugf("Directory '%s' not exist. Skipping rotate.", backupDir)
+				logCh <- logger.Log(jobName, n.name).Debugf("Directory '%s' not exist. Skipping rotation.", backupDir)
 				continue
 			}
 			logCh <- logger.Log(jobName, n.name).Errorf("Failed to read files in remote directory '%s' with error: %s", backupDir, err)
@@ -199,49 +182,6 @@ func (n *NFS) deleteDiscBackup(logCh chan logger.LogRecord, jobName, ofsPart str
 				errs = append(errs, err)
 			} else {
 				logCh <- logger.Log(jobName, n.name).Infof("Deleted old backup '%s' in directory '%s'", file, backupDir)
-			}
-		}
-	}
-
-	return errors.Join(errs...)
-}
-
-func (n *NFS) deleteIncrBackup(logCh chan logger.LogRecord, jobName, ofsPart string, full bool) error {
-	var errs []error
-
-	if full {
-		backupDir := path.Join(n.backupPath, ofsPart)
-
-		err := n.target.RemoveAll(backupDir)
-		if err != nil {
-			logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' with error: %s", backupDir, err)
-			errs = append(errs, err)
-		}
-	} else {
-		lastMonth, year := GetRetentionLastMonthAndYear(n.Retention)
-		backupDir := path.Join(n.backupPath, ofsPart, year)
-
-		dirs, err := n.target.ReadDirPlus(backupDir)
-		if err != nil {
-			logCh <- logger.Log(jobName, n.name).Errorf("Failed to get access to directory '%s' with error: %v", backupDir, err)
-			return err
-		}
-
-		for _, dir := range dirs {
-			dirName := dir.Name()
-			rx := regexp.MustCompile(`month_\d\d`)
-			if rx.MatchString(dirName) {
-				dirParts := strings.Split(dirName, "_")
-				dirMonth, _ := strconv.Atoi(dirParts[1])
-				if dirMonth < lastMonth {
-					if err = n.target.RemoveAll(path.Join(backupDir, dirName)); err != nil {
-						logCh <- logger.Log(jobName, n.name).Errorf("Failed to delete '%s' in directory '%s' with error: %s",
-							dir.Name(), backupDir, err)
-						errs = append(errs, err)
-					} else {
-						logCh <- logger.Log(jobName, n.name).Infof("Deleted old backup '%s' in directory '%s'", dir.Name(), backupDir)
-					}
-				}
 			}
 		}
 	}

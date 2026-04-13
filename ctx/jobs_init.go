@@ -17,7 +17,6 @@ import (
 	"github.com/uralm1/nxs-backup/misc"
 	"github.com/uralm1/nxs-backup/modules/backup/disc_files"
 	"github.com/uralm1/nxs-backup/modules/backup/external"
-	"github.com/uralm1/nxs-backup/modules/backup/incr_files"
 	"github.com/uralm1/nxs-backup/modules/backup/mongodump"
 	"github.com/uralm1/nxs-backup/modules/backup/mysql_logical"
 	"github.com/uralm1/nxs-backup/modules/backup/mysql_physical"
@@ -151,30 +150,6 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 				Storages:         jobStorages,
 				Sources:          sources,
 				Metrics:          o.metricsData,
-			})
-
-		case misc.IncrFiles:
-			var sources []incr_files.SourceParams
-
-			for _, src := range j.Sources {
-				sources = append(sources, incr_files.SourceParams{
-					Name:        src.Name,
-					Targets:     src.Targets,
-					Excludes:    src.Excludes,
-					SaveAbsPath: src.SaveAbsPath,
-					Gzip:        getGzipOrDefault(src.Gzip, j.Gzip),
-				})
-			}
-
-			job, err = incr_files.Init(incr_files.JobParams{
-				Name:            j.Name,
-				TmpDir:          j.TmpDir,
-				SafeRotation:    j.SafeRotation,
-				DeferredCopying: j.DeferredCopying,
-				DiskRateLimit:   diskRate,
-				Storages:        jobStorages,
-				Sources:         sources,
-				Metrics:         o.metricsData,
 			})
 
 		case misc.Mysql:
