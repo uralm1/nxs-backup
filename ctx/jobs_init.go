@@ -91,13 +91,13 @@ func jobsInit(o jobsOpts) ([]interfaces.Job, error) {
 			s, ok := o.storages[opt.StorageName]
 			if !ok {
 				st_errs++
-				errs = append(errs, fmt.Errorf("Failed to setup storage `%s`, job `%s`: storage is not available ", opt.StorageName, j.Name))
+				errs = append(errs, fmt.Errorf("Failed to setup storage `%s`, job `%s`: a storage is not available ", opt.StorageName, j.Name))
 				continue
 			}
 
 			if opt.Retention.Days < 0 || opt.Retention.Weeks < 0 || opt.Retention.Months < 0 {
 				st_errs++
-				errs = append(errs, fmt.Errorf("Failed to setup storage `%s`, job `%s`: a retention period can't be negative ", opt.StorageName, j.Name))
+				errs = append(errs, fmt.Errorf("Failed to setup storage `%s`, job `%s`: retention period can't be negative ", opt.StorageName, j.Name))
 				continue
 			}
 

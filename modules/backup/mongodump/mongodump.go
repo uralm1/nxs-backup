@@ -16,7 +16,6 @@ import (
 	"github.com/uralm1/nxs-backup/ds/mongo_connect"
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
-	"github.com/uralm1/nxs-backup/modules/backend/exec_cmd"
 	"github.com/uralm1/nxs-backup/modules/backend/targz"
 	"github.com/uralm1/nxs-backup/modules/logger"
 	"github.com/uralm1/nxs-backup/modules/metrics"
@@ -69,13 +68,13 @@ type SourceParams struct {
 
 func Init(jp JobParams) (interfaces.Job, error) {
 
-	// check if mysqldump available
-	if _, err := exec_cmd.Exec("mongodump", "--version"); err != nil {
-		return nil, fmt.Errorf("Job `%s` init failed. Can't check `mongodump` version. Please install `mongodump`. Error: %s ", jp.Name, err)
+	// check if mongodump is available
+	if err := misc.CheckAppViaVersion("mongodump"); err != nil {
+		return nil, err
 	}
-	// check if tar and gzip available
-	if _, err := exec_cmd.Exec("tar", "--version"); err != nil {
-		return nil, fmt.Errorf("Job `%s` init failed. Can't check `tar` version. Please install `tar`. Error: %s ", jp.Name, err)
+	// check if tar and gzip? available
+	if err := misc.CheckTar(); err != nil {
+		return nil, err
 	}
 
 	j := job{
@@ -101,7 +100,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 
 		conn, host, err := mongo_connect.GetConnectAndHost(src.ConnectParams)
 		if err != nil {
-			return nil, fmt.Errorf("Job `%s` init failed. MongoDB connect error: %s ", jp.Name, err)
+			return nil, fmt.Errorf("MongoDB connect error: %s ", err)
 		}
 		defer func() { _ = conn.Disconnect(context.TODO()) }()
 
@@ -110,7 +109,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 		if misc.Contains(src.TargetDBs, "all") {
 			databases, err = conn.ListDatabaseNames(context.TODO(), bson.D{})
 			if err != nil {
-				return nil, fmt.Errorf("Job `%s` init failed. Unable to list databases. Error: %s ", jp.Name, err)
+				return nil, fmt.Errorf("Unable to list databases. Error: %s ", err)
 			}
 		} else {
 			databases = src.TargetDBs
@@ -138,7 +137,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 			if isAllCollectionsFlag {
 				collections, err = conn.Database(db).ListCollectionNames(context.TODO(), bson.D{})
 				if err != nil {
-					return nil, fmt.Errorf("Job `%s` init failed. Unable to list collections of database `%s`. Error: %s ", jp.Name, db, err)
+					return nil, fmt.Errorf("Unable to list collections of database `%s`. Error: %s ", db, err)
 				}
 			} else {
 				collections = src.TargetCollections

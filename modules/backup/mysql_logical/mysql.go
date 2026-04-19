@@ -16,7 +16,6 @@ import (
 	"github.com/uralm1/nxs-backup/ds/mysql_connect"
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
-	"github.com/uralm1/nxs-backup/modules/backend/exec_cmd"
 	"github.com/uralm1/nxs-backup/modules/backend/files"
 	"github.com/uralm1/nxs-backup/modules/backend/targz"
 	"github.com/uralm1/nxs-backup/modules/logger"
@@ -70,10 +69,9 @@ type SourceParams struct {
 }
 
 func Init(jp JobParams) (interfaces.Job, error) {
-
 	// check if mysqldump available
-	if _, err := exec_cmd.Exec("mysqldump", "--version"); err != nil {
-		return nil, fmt.Errorf("Job `%s` init failed. Can't to check `mysqldump` version. Please install `mysqldump`. Error: %s ", jp.Name, err)
+	if err := misc.CheckAppViaVersion("mysqldump"); err != nil {
+		return nil, err
 	}
 
 	j := job{
@@ -99,7 +97,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 
 		dbConn, authFile, err := mysql_connect.GetConnectAndCnfFile(src.ConnectParams, "mysqldump")
 		if err != nil {
-			return nil, fmt.Errorf("Job `%s` init failed. MySQL connect error: %s ", jp.Name, err)
+			return nil, fmt.Errorf("MySQL connect error: %s ", err)
 		}
 
 		// fetch all databases
@@ -107,7 +105,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 		if misc.Contains(src.TargetDBs, "all") {
 			err = dbConn.Select(&databases, "show databases")
 			if err != nil {
-				return nil, fmt.Errorf("Job `%s` init failed. Unable to list databases. Error: %s ", jp.Name, err)
+				return nil, fmt.Errorf("Unable to list databases. Error: %s ", err)
 			}
 		} else {
 			databases = src.TargetDBs

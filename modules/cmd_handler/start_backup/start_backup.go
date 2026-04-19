@@ -66,7 +66,7 @@ func (sb *startBackup) Run() {
 			errs = append(errs, err)
 		}
 		if len(errs) > 0 {
-			err = fmt.Errorf("Some of backups were failed with next errors:\n%w", errors.Join(errs...))
+			err = fmt.Errorf("Some of backups were failed with errors:\n%w", errors.Join(errs...))
 		}
 		sb.done <- err
 	}()

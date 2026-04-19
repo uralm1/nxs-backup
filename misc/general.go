@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/uralm1/nxs-backup/modules/backend/exec_cmd"
 )
 
 type BackupType string
@@ -132,6 +133,19 @@ func RandString(strLen int64) string {
 	}
 
 	return string(b)
+}
+
+// CheckAppViaVersion() checks application by running it with '--version'
+func CheckAppViaVersion(application string) error {
+	if _, err := exec_cmd.Exec(application, "--version"); err != nil {
+		return fmt.Errorf("Can't determine `%s` version. Please install `%[1]s`. Error: %v", application, err)
+	}
+	return nil
+}
+
+// CheckTar() checks if 'tar' is available
+func CheckTar() error {
+	return CheckAppViaVersion("tar")
 }
 
 // CheckNewVersionAvailable checks if new version is available

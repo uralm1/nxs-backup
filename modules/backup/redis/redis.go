@@ -13,7 +13,6 @@ import (
 	"github.com/uralm1/nxs-backup/ds/redis_connect"
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
-	"github.com/uralm1/nxs-backup/modules/backend/exec_cmd"
 	"github.com/uralm1/nxs-backup/modules/backend/targz"
 	"github.com/uralm1/nxs-backup/modules/logger"
 	"github.com/uralm1/nxs-backup/modules/metrics"
@@ -56,11 +55,9 @@ type SourceParams struct {
 }
 
 func Init(jp JobParams) (interfaces.Job, error) {
-
 	// check if redis-cli available
-	_, err := exec_cmd.Exec("redis-cli", "--version")
-	if err != nil {
-		return nil, fmt.Errorf("Job `%s` init failed. Failed to check redis-cli version. Please check that `redis-cli` installed. Error: %s ", jp.Name, err)
+	if err := misc.CheckAppViaVersion("redis-cli"); err != nil {
+		return nil, err
 	}
 
 	j := job{
@@ -83,10 +80,9 @@ func Init(jp JobParams) (interfaces.Job, error) {
 	}
 
 	for _, src := range jp.Sources {
-
 		conn, dsn, err := redis_connect.GetConnectAndDSN(src.ConnectParams)
 		if err != nil {
-			return nil, fmt.Errorf("Job `%s` init failed. Redis connect error: %s ", jp.Name, err)
+			return nil, fmt.Errorf("Redis connect error: %s", err)
 		}
 		_ = conn.Close()
 

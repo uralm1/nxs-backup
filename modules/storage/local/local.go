@@ -97,44 +97,6 @@ func (l *Local) DeliverBackup(logCh chan logger.LogRecord, jobName, tmpBackupFil
 	return
 }
 
-func (l *Local) deliverBackupMetadata(logCh chan logger.LogRecord, jobName, tmpBackupFile, metadataDstPath string) error {
-	metadataSrcPath := tmpBackupFile + ".inc"
-
-	err := os.MkdirAll(path.Dir(metadataDstPath), os.ModePerm)
-	if err != nil {
-		logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to create directory: %s", err)
-		return err
-	}
-
-	_ = os.Remove(metadataDstPath)
-
-	if err = os.Rename(metadataSrcPath, metadataDstPath); err != nil {
-		logCh <- logger.Log(jobName, l.GetName()).Debugf("Unable to move incremental metadata file: %s", err)
-
-		metadataDst, err := os.Create(metadataDstPath)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = metadataDst.Close() }()
-
-		metadataSrc, err := files.GetLimitedFileReader(metadataSrcPath, l.rateLimit)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = metadataSrc.Close() }()
-
-		wr_bytes, err := io.Copy(metadataDst, metadataSrc)
-		if err != nil {
-			logCh <- logger.Log(jobName, l.GetName()).Errorf("Unable to make copy: %s", err)
-			return err
-		}
-		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully copied metadata to %s (%s)", metadataDstPath, humanize.Bytes(uint64(wr_bytes)))
-	} else {
-		logCh <- logger.Log(jobName, l.GetName()).Infof("Successfully moved metadata to %s", metadataDstPath)
-	}
-	return nil
-}
-
 func (l *Local) DeleteOldBackups(logCh chan logger.LogRecord, ofsPart string, job interfaces.Job) error {
 	if !l.rotateEnabled {
 		logCh <- logger.Log(job.GetName(), l.GetName()).Info("Backup rotation was skipped (disabled in config)")

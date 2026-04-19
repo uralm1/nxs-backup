@@ -13,7 +13,6 @@ import (
 
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
-	"github.com/uralm1/nxs-backup/modules/backend/exec_cmd"
 	"github.com/uralm1/nxs-backup/modules/backend/targz"
 	"github.com/uralm1/nxs-backup/modules/logger"
 	"github.com/uralm1/nxs-backup/modules/metrics"
@@ -60,9 +59,9 @@ type SourceParams struct {
 }
 
 func Init(jp JobParams) (interfaces.Job, error) {
-	// check if tar and gzip available
-	if _, err := exec_cmd.Exec("tar", "--version"); err != nil {
-		return nil, fmt.Errorf("Job `%s` init failed. Can't determine `tar` version. Please install `tar`. Error: %s ", jp.Name, err)
+	// check if tar is available
+	if err := misc.CheckTar(); err != nil {
+		return nil, err
 	}
 
 	j := job{
@@ -94,7 +93,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 
 			targetOfsList, err := filepath.Glob(targetPattern)
 			if err != nil {
-				return nil, fmt.Errorf("Job `%s` init failed. Unable to process pattern: %s. Error: %s. ", jp.Name, targetPattern, err)
+				return nil, fmt.Errorf("Unable to process pattern: %s. Error: %s. ", targetPattern, err)
 			}
 
 			for _, ofsFullPath := range targetOfsList {
@@ -104,7 +103,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 				for _, pattern := range src.Excludes {
 					match, err := glob.Match(pattern, ofsFullPath)
 					if err != nil {
-						return nil, fmt.Errorf("Job `%s` init failed. Unable to process pattern: %s. Error: %s. ", jp.Name, pattern, err)
+						return nil, fmt.Errorf("Unable to process pattern: %s. Error: %s. ", pattern, err)
 					}
 					if match {
 						skipOfs = true
@@ -206,7 +205,7 @@ func (j *job) NeedToMakeBackup() bool {
 func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 	var errs []error
 
-	for ofsPart, tgt := range j.targets {
+	for ofsPart, target := range j.targets {
 		startTime := time.Now()
 
 		j.SetOfsMetrics(ofsPart, map[string]float64{
@@ -218,7 +217,7 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 			metrics.BackupTimestamp: float64(startTime.Unix()),
 		})
 
-		tmpBackupFile := misc.GetFileFullPath(tmpDir, ofsPart, "tar", "", tgt.gzip)
+		tmpBackupFile := misc.GetFileFullPath(tmpDir, ofsPart, "tar", "", target.gzip)
 		err := os.MkdirAll(path.Dir(tmpBackupFile), os.ModePerm)
 		if err != nil {
 			logCh <- logger.Log(j.name, "").Errorf("Unable to create tmp dir with next error: %s", err)
@@ -227,13 +226,13 @@ func (j *job) DoBackup(logCh chan logger.LogRecord, tmpDir string) error {
 		}
 
 		if err = targz.Tar(targz.TarOpts{
-			Src:         tgt.path,
+			Src:         target.path,
 			Dst:         tmpBackupFile,
 			Incremental: false,
-			Gzip:        tgt.gzip,
-			SaveAbsPath: tgt.saveAbsPath,
+			Gzip:        target.gzip,
+			SaveAbsPath: target.saveAbsPath,
 			RateLim:     j.diskRateLimit,
-			Excludes:    tgt.excludes,
+			Excludes:    target.excludes,
 		}); err != nil {
 			j.SetOfsMetrics(ofsPart, map[string]float64{
 				metrics.BackupTime: float64(time.Since(startTime).Nanoseconds() / 1e6),

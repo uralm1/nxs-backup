@@ -17,7 +17,6 @@ import (
 	"github.com/uralm1/nxs-backup/ds/psql_connect"
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
-	"github.com/uralm1/nxs-backup/modules/backend/exec_cmd"
 	"github.com/uralm1/nxs-backup/modules/backend/targz"
 	"github.com/uralm1/nxs-backup/modules/logger"
 	"github.com/uralm1/nxs-backup/modules/metrics"
@@ -67,11 +66,10 @@ type SourceParams struct {
 }
 
 func Init(jp JobParams) (interfaces.Job, error) {
-
-	// check if mysqldump available
-	_, err := exec_cmd.Exec("pg_dump", "--version")
+	// check if pg_dump available
+	err := misc.CheckAppViaVersion("pg_dump")
 	if err != nil {
-		return nil, fmt.Errorf("Job `%s` init failed. Can't to check `pg_dump` version. Please install `pg_dump`. Error: %s ", jp.Name, err)
+		return nil, err
 	}
 
 	j := job{
@@ -97,7 +95,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 
 		for _, key := range src.ExtraKeys {
 			if matched, _ := regexp.MatchString(`(-f|--file)`, key); matched {
-				return nil, fmt.Errorf("Job `%s` init failed. Forbidden usage \"--file|-f\" parameter as extra_keys for `postgresql` jobs type ", jp.Name)
+				return nil, fmt.Errorf("Forbidden usage \"--file|-f\" parameter as extra_keys for `postgresql` jobs type")
 			}
 		}
 
@@ -116,14 +114,14 @@ func Init(jp JobParams) (interfaces.Job, error) {
 			if err = func() error {
 				dbConn, err = psql_connect.GetConnect(psql_connect.GetConnUrl(cp))
 				if err != nil {
-					return fmt.Errorf("Job `%s` init failed. User: `%s`, db: `%s`, PSQL connect error: %s ", jp.Name, cp.User, cp.Database, err)
+					return fmt.Errorf("User: `%s`, db: `%s`, PSQL connect error: %s", cp.User, cp.Database, err)
 				}
 				if err = dbConn.Ping(); err != nil {
-					return fmt.Errorf("Job `%s` init failed. PSQL ping check error: %s ", jp.Name, err)
+					return fmt.Errorf("PSQL ping error: %v", err)
 				}
 				defer func() { _ = dbConn.Close() }()
 				if err = dbConn.Select(&databases, "SELECT datname FROM pg_database WHERE datistemplate = false;"); err != nil {
-					return fmt.Errorf("Job `%s` init failed. Unable to list databases. Error: %s ", jp.Name, err)
+					return fmt.Errorf("Unable to list databases. Error: %s", err)
 				}
 				return nil
 			}(); err != nil {

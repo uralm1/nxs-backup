@@ -17,7 +17,6 @@ import (
 	"github.com/uralm1/nxs-backup/ds/psql_connect"
 	"github.com/uralm1/nxs-backup/interfaces"
 	"github.com/uralm1/nxs-backup/misc"
-	"github.com/uralm1/nxs-backup/modules/backend/exec_cmd"
 	"github.com/uralm1/nxs-backup/modules/backend/targz"
 	"github.com/uralm1/nxs-backup/modules/logger"
 	"github.com/uralm1/nxs-backup/modules/metrics"
@@ -63,14 +62,13 @@ type SourceParams struct {
 }
 
 func Init(jp JobParams) (interfaces.Job, error) {
-
-	// check if mysqldump available
-	if _, err := exec_cmd.Exec("pg_basebackup", "--version"); err != nil {
-		return nil, fmt.Errorf("Job `%s` init failed. Can't check `pg_basebackup` version. Please install `pg_basebackup`. Error: %s ", jp.Name, err)
+	// check if pg_basebackup available
+	if err := misc.CheckAppViaVersion("pg_basebackup"); err != nil {
+		return nil, err
 	}
-	// check if tar and gzip available
-	if _, err := exec_cmd.Exec("tar", "--version"); err != nil {
-		return nil, fmt.Errorf("Job `%s` init failed. Can't check `tar` version. Please install `tar`. Error: %s ", jp.Name, err)
+	// check if tar and gzip? available
+	if err := misc.CheckTar(); err != nil {
+		return nil, err
 	}
 
 	j := job{
@@ -96,7 +94,7 @@ func Init(jp JobParams) (interfaces.Job, error) {
 
 		for _, key := range src.ExtraKeys {
 			if matched, _ := regexp.MatchString(`(-D|--pgdata=)`, key); matched {
-				return nil, fmt.Errorf("Job `%s` init failed. Forbidden usage \"--pgdata|-D\" parameter as extra_keys for `postgresql_basebackup` jobs type ", jp.Name)
+				return nil, fmt.Errorf("Forbidden usage \"--pgdata|-D\" parameter as extra_keys for `postgresql_basebackup` jobs type")
 			}
 		}
 
@@ -110,10 +108,10 @@ func Init(jp JobParams) (interfaces.Job, error) {
 		connUrl := psql_connect.GetConnUrl(cp)
 		conn, err := psql_connect.GetConnect(connUrl)
 		if err != nil {
-			return nil, fmt.Errorf("Job `%s` init failed. PSQL connect error: %s ", jp.Name, err)
+			return nil, fmt.Errorf("PSQL connect error: %s", err)
 		}
 		if err = conn.Ping(); err != nil {
-			return nil, fmt.Errorf("Job `%s` init failed. PSQL ping check error: %s ", jp.Name, err)
+			return nil, fmt.Errorf("PSQL ping error: %s", err)
 		}
 		_ = conn.Close()
 
